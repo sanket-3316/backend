@@ -1,0 +1,137 @@
+{
+    "meta": {
+        "market_size_line": "Market Size, Value (USD Mn) & Volume (Units)",
+        "trend_line": "Key Market Trends & Growth Opportunities",
+        "share_line": "Market Share (%) Analysis, [[year_range]]",
+        "yoy_line": "Year-on-Year (YoY) Growth Rate",
+        "attractiveness_line": "Market Attractiveness",
+        "investment_line": "Global Investment & Trade Risks",
+        "pricing_line": "Pricing Analysis, [[year_range]]",
+        "margin_line": "Operating Margin/Profits, [[year_range]]"
+    },
+
+    "chapter_1": {
+        "title": "Research Methodology"
+    },
+    "chapter_2": {
+        "title": "Market Structure"
+    },
+    "chapter_3": {
+        "title": "Executive Summary"
+    },
+
+    "chapter_4": {
+        "title": "[[market_name]] Market Overview",
+        "sections": [
+            {
+                "title": "Introduction",
+                "children": [
+                    "Market Snapshot",
+                    "Assumptions, Inclusion & Exclusions",
+                    "Technological Advancements & Patent Analysis",
+                    "Case Studies",
+                    "Market Entry & Launch Strategies",
+                    "Macro-Economic Factors Impacting the Market Growth"
+                ]
+            },
+            {
+                "title": "[[market_name]] Market Dynamics",
+                "children": [
+                    "Market Drivers",
+                    "Market Restraints",
+                    "Market Opportunity"
+                ]
+            },
+            {
+                "title": "[[market_name]] Market - Supply Chain Analysis",
+                "children": [
+                    "Key Raw Material/Components Provider",
+                    "Key Manufacturers",
+                    "Key Distributors",
+                    "Key Consumers"
+                ]
+            },
+            {
+                "title": "Key Forces Shaping the [[market_name]] Market",
+                "children": [
+                    "Bargaining Power of Suppliers",
+                    "Bargaining Power of Buyers",
+                    "Threat of Substitution",
+                    "Threat of New Entrants",
+                    "Competitive Rivalry"
+                ]
+            }
+        ]
+    },
+
+    "segment_chapter": {
+        "title": "Global [[market_name]] Market, By [[segment_label]]"
+    },
+    "segment_labels": {
+        "By component": "Component",
+        "By deployment": "Deployment Mode",
+        "By application": "Application",
+        "By industry": "Industry Vertical",
+        "By region": "Region",
+        "By product": "Product Type",
+        "By product type": "Product Type",
+        "By type": "Type",
+        "By end user": "End User",
+        "By end-user": "End User",
+        "By technology": "Technology",
+        "By solution": "Solution",
+        "By offering": "Offering",
+        "By service": "Service",
+        "By enterprise size": "Enterprise Size"
+    },
+
+    "region_chapter": {
+        "title": "Global [[market_name]] Market, By Region",
+        "sub_chapter_title": "Global [[market_name]] Market, By [[region_name]]",
+        "regions": [
+            {
+                "name": "North America",
+                "countries": ["US", "Canada"]
+            },
+            {
+                "name": "Europe",
+                "countries": ["Germany", "France", "UK", "Spain", "Italy", "Switzerland", "Russia", "Poland", "Rest of Europe"]
+            },
+            {
+                "name": "Asia Pacific",
+                "countries": ["China", "Japan", "South Korea", "India", "Australia", "South East Asia", "Rest of APAC"]
+            },
+            {
+                "name": "Latin America",
+                "countries": ["Brazil", "Mexico", "Argentina", "Rest of LATAM"]
+            },
+            {
+                "name": "Middle East & Africa",
+                "countries": ["Saudi Arabia", "UAE", "South Africa", "Rest of MEA"]
+            }
+        ]
+    },
+
+    "competitive_chapter": {
+        "title": "Competitive Analysis",
+        "landscape_title": "Competition Landscape, Key Players",
+        "landscape_children": [
+            "Global Market Share (%) Analysis of Key Players in [[market_name]], in Value (USD Mn) & Volume (Units)",
+            "Company Overview",
+            "Company Financials",
+            "News & Developments",
+            "Strategic Initiatives"
+        ],
+        "company_profiles_title": "Company Profiles"
+    },
+
+    "methodology": {
+        "title": "Research Methodology",
+        "paragraphs": [
+            "To provide you with a comprehensive understanding of how we quantify your market opportunity, we utilize a multi-phased methodology designed to minimize risk and maximize strategic clarity. We begin the process by establishing a clear conceptual framework, often referred to as the TAM-SAM-SOM model. By starting with the Total Addressable Market, we look at the absolute global demand for your category. We then refine this into the Serviceable Addressable Market to account for your specific geographic and technological reach, and finally, we pinpoint the Serviceable Obtainable Market. This ensures that the final figures we present are not just theoretical \"vanity metrics,\" but represent a realistic, capture-able revenue target for your business.",
+            "Our data collection process relies on a rigorous principle called triangulation, where we cross-reference multiple independent data streams to ensure accuracy. We initiate this with deep-dive secondary research, synthesizing high-value intelligence from audited financial filings, government trade databases, and specialized industry journals. This \"desk research\" phase provides a macro-economic baseline and identifies historical growth trajectories. However, because secondary data can sometimes lag behind real-time shifts, we supplement this with targeted primary research. This involves direct engagement with Key Opinion Leaders (KOLs) and structured quantitative surveys to capture the current pulse of the market and emerging buyer intent.",
+            "To ensure the integrity of our estimates, we employ a dual-modeling approach, calculating the market size from both the \"Top-Down\" and \"Bottom-Up.\" The Top-Down analysis provides a valuable sanity check against broader economic trends, but we place the most weight on our Bottom-Up modeling. By taking granular data, such as the average transaction value and the actual number of potential customer touchpoints, and scaling them upward, we build a highly defensible model grounded in operational reality. This dual-verification method allows us to identify any discrepancies early, ensuring that the resulting data is robust enough to withstand the scrutiny of stakeholders or investors.",
+            "Finally, we recognize that a static market size figure is only a snapshot in time. To provide you with a roadmap for the future, we integrate trend analysis and Compound Annual Growth Rate (CAGR) forecasting into our final reporting. We analyze the underlying drivers, such as regulatory shifts, technological disruptions, or changing consumer behaviors, to predict how the market will evolve over the next three to five years. This ongoing tracking mechanism transforms a simple number into a dynamic strategic tool, allowing you to monitor your market share in real-time and pivot your resources as new opportunities emerge."
+        ]
+    }
+}

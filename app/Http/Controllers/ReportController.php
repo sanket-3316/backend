@@ -461,6 +461,15 @@ class ReportController extends Controller
                 ], 404);
             }
 
+            // 🔹 RUNTIME CHART IMAGES (market overview + per-segment) INTO DESCRIPTION
+            if (!empty($report->description)) {
+                $report->description = inject_report_charts_into_description(
+                    $report->description,
+                    $report->segmentation,
+                    $report->report_url
+                );
+            }
+
             // 🔥 ALTERNATE URLS (LIGHT QUERY)
             $alternateUrls = DB::table('reports_info as ri')
                 ->join('languages as l', 'ri.language_id', '=', 'l.id')
@@ -475,10 +484,21 @@ class ReportController extends Controller
                     ];
                 });
 
+            // 🔹 LANGUAGE-WISE TABLE OF CONTENTS
+            $toc = build_report_toc(
+                $language->code,
+                $report->keyword,
+                $report->segmentation,
+                $report->historic_year,
+                $report->forecast_year,
+                $report->key_companys
+            );
+            $report->toc = $toc;
             // 🔹 FINAL RESPONSE
             return response()->json([
                 'status' => true,
                 'report' => $report,
+                'toc' => $toc,
                 'alternate_urls' => $alternateUrls
             ]);
         } catch (\Exception $e) {

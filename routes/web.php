@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CareerController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
@@ -57,6 +58,15 @@ Route::middleware(['auth.check'])->group(function () {
         Route::post('/store', [RedirectController::class, 'store']);
         Route::post('/update/{id}', [RedirectController::class, 'update']);
         Route::post('/delete', [RedirectController::class, 'delete']);
+    });
+
+    Route::prefix('career')->group(function () {
+        Route::get('/', [CareerController::class, 'index']);
+        Route::get('/list', [CareerController::class, 'list']);
+        Route::get('/show/{id}', [CareerController::class, 'show']);
+        Route::post('/store', [CareerController::class, 'store']);
+        Route::post('/update/{id}', [CareerController::class, 'update']);
+        Route::post('/delete', [CareerController::class, 'delete']);
     });
 
     Route::prefix('keywords')->group(function () {

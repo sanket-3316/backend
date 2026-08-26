@@ -345,6 +345,37 @@ if (!function_exists('build_wrapped_center_text')) {
     }
 }
 
+if (!function_exists('build_wrapped_left_text')) {
+    /**
+     * Same wrapping approach as build_wrapped_center_text(), but left-anchored
+     * at a fixed x — for titles placed against a left margin rather than
+     * centered (e.g. the report card thumbnail).
+     */
+    function build_wrapped_left_text($text, $x, $anchorY, $fontFamily, $fontWeight, $fontSize, $maxWidth, $maxLines = 2)
+    {
+        $avgCharWidth = $fontSize * 0.6;
+        $maxChars = max(6, (int) floor($maxWidth / $avgCharWidth));
+
+        $lines = explode("\n", wordwrap((string) $text, $maxChars, "\n", false));
+
+        if (count($lines) > $maxLines) {
+            $lines = array_slice($lines, 0, $maxLines);
+            $last = $lines[$maxLines - 1];
+            $lines[$maxLines - 1] = mb_substr($last, 0, max(0, mb_strlen($last) - 1)) . '…';
+        }
+
+        $lineHeight = $fontSize * 1.3;
+
+        $tspans = '';
+        foreach ($lines as $i => $line) {
+            $y = round($anchorY + $i * $lineHeight, 2);
+            $tspans .= '<tspan x="' . $x . '" y="' . $y . '">' . e($line) . '</tspan>';
+        }
+
+        return '<text text-anchor="start" font-family="' . $fontFamily . '" font-weight="' . $fontWeight . '" font-size="' . $fontSize . '">' . $tspans . '</text>';
+    }
+}
+
 // ============================================================================
 //  RUNTIME REPORT CHART IMAGES — inject <img> tags into report description HTML
 // ============================================================================

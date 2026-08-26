@@ -37,6 +37,12 @@
         <span>Category</span>
     </a>
 
+    <!-- SIMPLE MENU -->
+    <a href="{{ url('career') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
+        <i class="fa-solid fa-briefcase"></i>
+        <span>Careers</span>
+    </a>
+
     <!-- SETTINGS -->
     <div class="menu-item">
 

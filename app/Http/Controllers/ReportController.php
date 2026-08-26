@@ -332,7 +332,13 @@ class ReportController extends Controller
                 $query->where('r.category_id', $categoryId);
             }
             if (!empty($search)) {
-                $query->where('ri.keyword', 'LIKE', "%$search%");
+                // Match either the bare keyword ("Biogas") or the full report
+                // title ("Biogas Market Research Report 2033") — searching the
+                // market name as shown on the site was matching neither before.
+                $query->where(function ($q) use ($search) {
+                    $q->where('ri.keyword', 'LIKE', "%$search%")
+                        ->orWhere('ri.report_title', 'LIKE', "%$search%");
+                });
             }
             $query->orderBy('r.created_at', 'desc');
             $reports = $query->limit($limit)->get();

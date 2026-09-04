@@ -46,6 +46,7 @@ Route::middleware(['auth.check'])->group(function () {
         Route::get('/', [ReportController::class, 'index']);
         Route::get('/list', [ReportController::class, 'getReports']);
         Route::post('store', [ReportController::class, 'store']);
+        Route::post('/generate-from-keyword', [ReportController::class, 'generateFromKeyword']);
         Route::get('/edit/{id}', [ReportController::class, 'edit']);
         Route::post('/update/{id}', [ReportController::class, 'update']);
         Route::delete('/delete/{id}', [ReportController::class, 'destroy']);

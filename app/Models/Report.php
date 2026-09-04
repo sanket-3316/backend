@@ -191,6 +191,7 @@ class Report extends Model
             ->where('ri.language_id', 1)
             ->where('ct.language_id', 1)
             ->where('ri.is_deleted', 0)
+            ->orderBy('r.created_at', 'desc')
             ->get();
     }
 }

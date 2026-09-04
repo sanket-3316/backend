@@ -35,6 +35,11 @@ class GenerateReportJob implements ShouldQueue
 
             $keyword = $this->keyword->keyword . " market";
 
+            // Computed once, fed into the market-size prompt and used directly
+            // for the report's own historic/base/forecast year fields below —
+            // keeps GPT's estimate and the stored years consistent.
+            $years = report_years();
+
             // get report segments
             $segments_prompt = get_report_segmentation_prompt();
             $segments_result = search_from_gpt(
@@ -72,7 +77,7 @@ class GenerateReportJob implements ShouldQueue
             $key_players_result =  json_decode($key_players_result, true);
 
             // Generate  market size data
-            $market_size_data_prompt = get_report_market_size_data_prompt();
+            $market_size_data_prompt = get_report_market_size_data_prompt($years);
             $market_size_data_result = search_from_gpt(
                 str_replace(["[[keyword]]"], [$keyword],  $market_size_data_prompt['user']),
                 $market_size_data_prompt['system'],
@@ -89,7 +94,13 @@ class GenerateReportJob implements ShouldQueue
             $description_prompt = get_report_description_prompt(
                 $this->keyword->keyword,
                 $segments_result,
-                $market_size_data_result,
+                [
+                    'base_year' => $years['base_year'],
+                    'forecast_year' => $years['forecast_start_year'],
+                    'base_year_market_size' => $market_size_data_result['base_year_market_size'] ?? '',
+                    'forecast_market_size' => $market_size_data_result['forecast_market_size'] ?? '',
+                    'cagr_percent' => $market_size_data_result['cagr_percent'] ?? '',
+                ],
                 $key_players_result
             );
 
@@ -113,12 +124,12 @@ class GenerateReportJob implements ShouldQueue
                 'slug' => $this->keyword->keyword . " market",
                 'category_id' => 1,
 
-                'base_year' => $market_size_data_result['base_year'],
-                'historic_year' => '2019-2023',
-                'forecast_year' => $market_size_data_result['forecast_year'],
+                'base_year' => $years['base_year'],
+                'historic_year' => $years['historic_start_year'],
+                'forecast_year' => $years['forecast_end_year'],
 
-                'base_year_market_size' => $market_size_data_result['base_year_market_size_usd_billion'],
-                'forecast_year_market_size' => $market_size_data_result['forecast_market_size_usd_billion'],
+                'base_year_market_size' => $market_size_data_result['base_year_market_size'],
+                'forecast_year_market_size' => $market_size_data_result['forecast_market_size'],
                 'forecast_cagr' => $market_size_data_result['cagr_percent'],
 
                 'key_companys' => $key_players_result['key_players'],
@@ -131,10 +142,7 @@ class GenerateReportJob implements ShouldQueue
                 'description' => $rd_result,
                 'segmentation_json' => $segments_result['segments'],
 
-                'single' => 1999,
-                'multiuser' => 2999,
-                'corporate' => 4999,
-                'excel' => 999,
+                ...get_report_default_prices(),
             ]);
             // Save report (you can store in DB/file later)
             // For now just mark success

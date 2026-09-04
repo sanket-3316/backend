@@ -77,7 +77,9 @@ function report_random_stats()
 
 function generate_report_title($keyword)
 {
-    return "$keyword Market Research Report 2033";
+    $report_year = report_years();
+    $forecast_end_year = $report_year['forecast_end_year'];
+    return "$keyword Market Research Report $forecast_end_year";
 }
 function generate_report_h1_long_title($keyword, $segments)
 {
@@ -208,34 +210,34 @@ function get_report_key_players_prompt()
     ];
 }
 
-function get_report_market_size_data_prompt()
+function get_report_market_size_data_prompt($years = null)
 {
+    $years = $years ?: report_years();
+
     return [
-        "system" => "You are a market research data analyst. Provide realistic estimated numerical market data in JSON format only.",
-        "user" => "Generate estimated market size data for the given [[market]] market.\n
-        
+        "system" => "You are a market research data analyst. Provide realistic estimated market data in JSON format only.",
+        "user" => "Generate estimated market size data for the [[keyword]] market, using these exact years — do not invent different years.
+
+                Base Year: {$years['base_year']}
+                Historic Period: {$years['historic_period']}
+                Forecast Year: {$years['forecast_end_year']}
 
                 Return ONLY valid JSON:
 
                 {
-                \"market\": \"\",
-                \"base_year\": \"2024\",
-                \"base_year_market_size_usd_billion\": 0,
-                \"forecast_year\": \"2030\",
-                \"forecast_market_size_usd_billion\": 0,
+                \"base_year_market_size\": \"\",
+                \"forecast_market_size\": \"\",
                 \"cagr_percent\": 0,
                 \"meta_description\": \"\"
                 }
 
                 Rules:
                 - Use realistic industry estimates
-                - CAGR must be logical based on market growth
-                - Values should be numbers (not strings)
+                - CAGR must be logical based on market growth between {$years['base_year']} and {$years['forecast_end_year']}
+                - base_year_market_size and forecast_market_size MUST be formatted strings like \"\$1.5 Billion\" or \"\$850 Million\" — always include the dollar sign and the word Million or Billion, never a bare number
+                - cagr_percent must be a number (not a string)
                 - Do not add explanations
-                - Do not include currency symbols
-                - Do not return anything except JSON
-
-                Market: %s"
+                - Do not return anything except JSON"
     ];
 }
 
@@ -313,6 +315,54 @@ if (!function_exists('apply_internal_linking_to_description')) {
         }, $html);
 
         return [$html, $added];
+    }
+}
+
+if (!function_exists('parse_market_value')) {
+    // Splits a stored market-size string into [numeric value, short unit].
+    // Handles both the compact form ("3.5Bn") and the GPT-generated form
+    // ("$1.5 Billion"/"$850 Million") — the leading "$" is simply skipped
+    // since the number match isn't anchored to the string start — and always
+    // normalizes the unit down to "Bn"/"Mn" regardless of which form it saw.
+    // Plain numeric input returns [n, '']; empty/unparseable input returns [0.0, ''].
+    function parse_market_value($raw)
+    {
+        if ($raw === null || $raw === '') {
+            return [0.0, ''];
+        }
+
+        if (is_numeric($raw)) {
+            return [(float) $raw, ''];
+        }
+
+        preg_match('/(-?[\d,]*\.?\d+)\s*([A-Za-z%$]*)/', (string) $raw, $m);
+
+        $value = isset($m[1]) && $m[1] !== '' ? (float) str_replace(',', '', $m[1]) : 0.0;
+        $rawUnit = isset($m[2]) ? trim($m[2]) : '';
+
+        $unit = match (true) {
+            $rawUnit === '' => '',
+            stripos($rawUnit, 'b') === 0 => 'Bn',
+            stripos($rawUnit, 'm') === 0 => 'Mn',
+            default => $rawUnit,
+        };
+
+        return [$value, $unit];
+    }
+}
+
+if (!function_exists('get_report_default_prices')) {
+    // Single source of truth for default report pricing tiers — used both by
+    // the report:generate cron job and by the dashboard's Add Report modal,
+    // so the two stay in sync.
+    function get_report_default_prices()
+    {
+        return [
+            'single' => 2999,
+            'multiuser' => 3999,
+            'corporate' => 4999,
+            'excel' => 1999,
+        ];
     }
 }
 
@@ -651,9 +701,9 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
 
                     MARKET DATA:
                     - Base Year: {$market['base_year']}
-                    - Base Market Size: {$market['base_year_market_size_usd_billion']} Billion USD
+                    - Base Market Size: {$market['base_year_market_size']}
                     - Forecast Year: {$market['forecast_year']}
-                    - Forecast Market Size: {$market['forecast_market_size_usd_billion']} Billion USD
+                    - Forecast Market Size: {$market['forecast_market_size']}
                     - CAGR: {$market['cagr_percent']}%
 
                     KEY PLAYERS:

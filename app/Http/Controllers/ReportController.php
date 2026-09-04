@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Languages;
 use Illuminate\Http\Request;
 use App\Models\Report;
+use App\Models\ReportKeyword;
 use App\Models\UserModel;
 use App\Services\ReportService;
 use Illuminate\Support\Facades\DB;
@@ -165,6 +166,141 @@ class ReportController extends Controller
     {
         Report::deleteReport($id);
         return response()->json(['status' => 'deleted']);
+    }
+
+    // Dashboard "Generate" button: same GPT prompt sequence as GenerateReportJob
+    // (the report:generate cron), but run synchronously here so the response can
+    // populate the Add Report modal for review before the admin saves it via the
+    // normal /report/store or /report/update flow. This does NOT touch the cron
+    // job, the report:generate command, or its schedule.
+    public function generateFromKeyword(Request $request)
+    {
+        $request->validate([
+            'keyword' => 'required|string',
+        ]);
+
+        $rawKeyword = trim($request->keyword);
+
+        // Add the keyword if it's new; reuse the existing row otherwise (unique on `keyword`)
+        $keywordModel = ReportKeyword::firstOrCreate(
+            ['keyword' => $rawKeyword],
+            ['report_status' => 'pending']
+        );
+        $keywordModel->update(['report_status' => 'processing', 'error' => null]);
+
+        try {
+            $gptKeyword = $rawKeyword . ' market';
+
+            // Computed once, fed into the market-size prompt and used directly
+            // for base_year/forecast_year below — keeps GPT's estimate and the
+            // years shown in the modal consistent (mirrors GenerateReportJob).
+            $years = report_years();
+
+            $segmentsPrompt = get_report_segmentation_prompt();
+            $segmentsResult = search_from_gpt(
+                str_replace(['[[keyword]]'], [$gptKeyword], $segmentsPrompt['user']),
+                $segmentsPrompt['system'],
+                0.08,
+                12500,
+                'json_object'
+            );
+            if (empty($segmentsResult)) {
+                throw new \Exception('GPT did not return segments');
+            }
+            $segmentsResult = json_decode($segmentsResult, true);
+            if (!isset($segmentsResult['segments'])) {
+                throw new \Exception('Invalid segments JSON');
+            }
+
+            $keyPlayersPrompt = get_report_key_players_prompt();
+            $keyPlayersResult = search_from_gpt(
+                str_replace(['[[keyword]]'], [$gptKeyword], $keyPlayersPrompt['user']),
+                $keyPlayersPrompt['system'],
+                0.08,
+                12500,
+                'json_object'
+            );
+            if (empty($keyPlayersResult)) {
+                throw new \Exception('GPT did not return key players');
+            }
+            $keyPlayersResult = json_decode($keyPlayersResult, true);
+
+            $marketSizePrompt = get_report_market_size_data_prompt($years);
+            $marketSizeResult = search_from_gpt(
+                str_replace(['[[keyword]]'], [$gptKeyword], $marketSizePrompt['user']),
+                $marketSizePrompt['system'],
+                0.08,
+                12500,
+                'json_object'
+            );
+            if (empty($marketSizeResult)) {
+                throw new \Exception('GPT did not return market size data');
+            }
+            $marketSizeResult = json_decode($marketSizeResult, true);
+
+            $descriptionPrompt = get_report_description_prompt(
+                $rawKeyword,
+                $segmentsResult,
+                [
+                    'base_year' => $years['base_year'],
+                    'forecast_year' => $years['forecast_start_year'],
+                    'base_year_market_size' => $marketSizeResult['base_year_market_size'] ?? '',
+                    'forecast_market_size' => $marketSizeResult['forecast_market_size'] ?? '',
+                    'cagr_percent' => $marketSizeResult['cagr_percent'] ?? '',
+                ],
+                $keyPlayersResult
+            );
+            $description = search_from_gpt(
+                $descriptionPrompt['user'],
+                $descriptionPrompt['system'],
+                0.4,
+                8000,
+                'text'
+            );
+            if (empty($description)) {
+                throw new \Exception('GPT did not return report description');
+            }
+
+            $keywordModel->update([
+                'is_report_generated' => true,
+                'report_status' => 'completed',
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'data' => array_merge([
+                    'keyword' => $rawKeyword,
+                    'report_title' => generate_report_title($rawKeyword),
+                    'h1_long_title' => $segmentsResult['h1_long_title'] ?? '',
+                    'meta_desc' => $marketSizeResult['meta_description'] ?? '',
+
+                    'base_year' => $years['base_year'],
+                    'forecast_year' => $years['forecast_start_year'],
+                    'base_year_market_size' => $marketSizeResult['base_year_market_size'] ?? null,
+                    'forecast_year_market_size' => $marketSizeResult['forecast_market_size'] ?? null,
+                    'forecast_cagr' => $marketSizeResult['cagr_percent'] ?? null,
+
+                    'key_companys' => $keyPlayersResult['key_players'] ?? [],
+                    'segmentation' => $segmentsResult['segments'] ?? [],
+                    'description' => $description,
+
+                    // sensible defaults GPT doesn't produce
+                    'pages' => report_random_stats()['pages'],
+                    'views' => report_random_stats()['views'],
+                    'rating' => report_random_stats()['rating'],
+                ], get_report_default_prices()),
+            ]);
+        } catch (\Exception $e) {
+            $keywordModel->update([
+                'report_status' => 'failed',
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function getReports()

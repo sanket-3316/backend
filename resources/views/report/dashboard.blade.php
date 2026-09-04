@@ -22,9 +22,15 @@
                 </thead>
             </table>
         </div>
-        <div class="modal fade" id="reportModal">
+        <div class="modal fade" id="reportModal" data-mdb-backdrop="static" data-mdb-keyboard="false" tabindex="-1">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">Report</h5>
+                        <button type="button" class="btn-close" id="closeReportModalBtn"
+                            data-mdb-dismiss="modal" aria-label="Close"></button>
+                    </div>
 
                     <form id="reportForm" enctype="multipart/form-data">
                         @csrf
@@ -51,9 +57,13 @@
 
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <div class="form-outline mb-4" data-mdb-input-init>
-                                            <input type="text" name="keyword" id="keyword" class="form-control">
-                                            <label class="form-label" for="keyword">Keyword</label>
+                                        <label class="form-label" for="keyword">Keyword</label>
+                                        <div class="input-group mb-4">
+                                            <input type="text" name="keyword" id="keyword" class="form-control"
+                                                placeholder="e.g. Generative AI">
+                                            <button type="button" id="generateReportBtn" class="btn btn-primary">
+                                                Generate
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -93,7 +103,7 @@
                                     <div class="col-md-4">
                                         <div class="form-outline mb-4" data-mdb-input-init>
                                             <input type="number" name="historic_year"
-                                                value="{{ report_years()['historic_start_year'] }}" class="form-control">
+                                                value="{{ report_years()['forecast_end_year'] }}" class="form-control">
                                             <label class="form-label" for="historic_year">Historic year</label>
                                         </div>
                                     </div>
@@ -160,17 +170,17 @@
                                         <div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input"name="format" type="checkbox"
-                                                    id="excel" value="Excel" />
+                                                    id="excel" value="Excel" checked />
                                                 <label class="form-check-label" for="excel">Excel</label>
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" name="format" type="checkbox"
-                                                    id="pdf" value="PDF" />
+                                                    id="pdf" value="PDF" checked />
                                                 <label class="form-check-label" for="pdf">PDF</label>
                                             </div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" name="format" type="checkbox"
-                                                    id="ppt" value="PPT" />
+                                                    id="ppt" value="PPT" checked />
                                                 <label class="form-check-label" for="ppt">PPT</label>
                                             </div>
                                         </div>
@@ -233,14 +243,19 @@
                             <!-- 🔹 TAB 5: PRICE -->
                             <div class="tab-pane fade" id="price">
 
+                                @php($defaultPrices = get_report_default_prices())
                                 <div class="row">
-                                    <div class="col-md-3"><input type="number" name="single" class="form-control mb-3"
+                                    <div class="col-md-3"><input type="number" name="single"
+                                            value="{{ $defaultPrices['single'] }}" class="form-control mb-3"
                                             placeholder="Single"></div>
                                     <div class="col-md-3"><input type="number" name="multiuser"
-                                            class="form-control mb-3" placeholder="Multiuser"></div>
+                                            value="{{ $defaultPrices['multiuser'] }}" class="form-control mb-3"
+                                            placeholder="Multiuser"></div>
                                     <div class="col-md-3"><input type="number" name="corporate"
-                                            class="form-control mb-3" placeholder="Corporate"></div>
-                                    <div class="col-md-3"><input type="number" name="excel" class="form-control mb-3"
+                                            value="{{ $defaultPrices['corporate'] }}" class="form-control mb-3"
+                                            placeholder="Corporate"></div>
+                                    <div class="col-md-3"><input type="number" name="excel"
+                                            value="{{ $defaultPrices['excel'] }}" class="form-control mb-3"
                                             placeholder="Excel"></div>
                                 </div>
 
@@ -268,6 +283,15 @@
                 tinymce.get('swot_analysis')?.setContent('');
                 tinymce.get('primary_interview_insights')?.setContent('');
 
+                // auto-pick a random category so the field isn't left blank
+                let $categoryOptions = $('#category_id option[value!=""]');
+                if ($categoryOptions.length) {
+                    let randomCategory = $categoryOptions.eq(
+                        Math.floor(Math.random() * $categoryOptions.length)
+                    ).val();
+                    $('#category_id').val(randomCategory).trigger('change');
+                }
+
                 $('#reportModal').modal('show');
                 // create default one segment
                 $('#addSegmentBtn').click();
@@ -278,12 +302,100 @@
                     });
                 }, 300);
             });
-            $('input[name="report_title"]').on('keyup', function() {
-                let slug = $(this).val().toLowerCase()
+            // Slug is driven off the keyword, always ending in "-market" — but
+            // only once, even if the keyword itself already ends with "market"
+            function slugFromKeyword(raw) {
+                let base = (raw || '').toLowerCase()
                     .replace(/[^a-z0-9]+/g, '-')
                     .replace(/(^-|-$)/g, '');
 
-                $('#slug').val(slug);
+                if (!base) return '';
+
+                return /(^|-)market$/.test(base) ? base : base + '-market';
+            }
+
+            $('#keyword').on('keyup', function() {
+                $('#slug').val(slugFromKeyword($(this).val()));
+            });
+
+            $('#generateReportBtn').click(function() {
+                let keyword = $('#keyword').val().trim();
+
+                if (!keyword) {
+                    showToast('Enter a keyword first', 'danger');
+                    return;
+                }
+
+                $('#slug').val(slugFromKeyword(keyword));
+
+                let $btn = $(this);
+                let originalText = $btn.text();
+                $btn.prop('disabled', true).text('Generating...');
+
+                $.ajax({
+                    url: '/report/generate-from-keyword',
+                    method: 'POST',
+                    data: {
+                        keyword: keyword
+                    },
+                    success: function(res) {
+                        if (!res.status) {
+                            showToast(res.message || 'Generation failed', 'danger');
+                            return;
+                        }
+
+                        let data = res.data;
+
+                        // ===== TAB 1 (REPORT) =====
+                        $('#keyword').val(data.keyword);
+                        $('#slug').val(slugFromKeyword(data.keyword));
+
+                        $('[name="base_year"]').val(data.base_year);
+                        $('[name="forecast_year"]').val(data.forecast_year);
+                        $('[name="base_year_market_size"]').val(data.base_year_market_size);
+                        $('[name="forecast_year_market_size"]').val(data.forecast_year_market_size);
+                        $('[name="forecast_cagr"]').val(data.forecast_cagr);
+
+                        $('[name="pages"]').val(data.pages);
+                        $('[name="views"]').val(data.views);
+                        $('[name="rating"]').val(data.rating);
+
+                        // ===== TAB 2 (SEGMENTATION) =====
+                        $('[name="key_companys"]').val(JSON.stringify(data.key_companys));
+
+                        $('#segmentContainer').html('');
+                        if (data.segmentation && Object.keys(data.segmentation).length) {
+                            loadSegments(JSON.stringify(data.segmentation));
+                        } else {
+                            $('#addSegmentBtn').click();
+                        }
+
+                        // ===== TAB 3 (DESCRIPTION) =====
+                        $('[name="report_title"]').val(data.report_title);
+                        $('[name="meta_desc"]').val(data.meta_desc);
+                        $('[name="h1_long_title"]').val(data.h1_long_title);
+                        tinymce.get('description')?.setContent(data.description || '');
+
+                        // ===== TAB 4 (PRICE) — defaults, editable before save =====
+                        $('[name="single"]').val(data.single);
+                        $('[name="multiuser"]').val(data.multiuser);
+                        $('[name="corporate"]').val(data.corporate);
+                        $('[name="excel"]').val(data.excel);
+
+                        showToast('Report content generated — review and save', 'success');
+                    },
+                    error: function(xhr) {
+                        let message = xhr.responseJSON?.message || 'Server error';
+                        showToast(message, 'danger');
+                    },
+                    complete: function() {
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+
+            $('#closeReportModalBtn').click(function() {
+                $('#reportModal').modal('hide');
             });
 
             let segmentIndex = 0;

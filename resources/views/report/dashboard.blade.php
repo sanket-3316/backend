@@ -96,14 +96,14 @@
                                     <div class="col-md-4">
                                         <div class="form-outline mb-4" data-mdb-input-init>
                                             <input type="number" name="forecast_year"
-                                                value="{{ report_years()['forecast_start_year'] }}" class="form-control">
+                                                value="{{ report_years()['forecast_end_year'] }}" class="form-control">
                                             <label class="form-label" for="forecast_year">Forecast year</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-outline mb-4" data-mdb-input-init>
                                             <input type="number" name="historic_year"
-                                                value="{{ report_years()['forecast_end_year'] }}" class="form-control">
+                                                value="{{ report_years()['historic_start_year'] }}" class="form-control">
                                             <label class="form-label" for="historic_year">Historic year</label>
                                         </div>
                                     </div>

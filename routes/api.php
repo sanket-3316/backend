@@ -12,6 +12,7 @@ Route::get('/categories', [CategoryController::class, 'get_all_categories']);
 Route::get('/reports', [ReportController::class, 'reports']);
 Route::get('/category-wise-reports', [ReportController::class, 'categoryReports']);
 Route::get('/get-single-report', [ReportController::class, 'getSingleReport']);
+Route::get('/sitemap-reports', [ReportController::class, 'sitemapReports']);
 
 // career routes
 Route::get('/careers', [CareerController::class, 'get_all_careers']);

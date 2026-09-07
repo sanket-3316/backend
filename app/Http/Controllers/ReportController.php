@@ -422,7 +422,11 @@ class ReportController extends Controller
             $categorySlug = $request->header('X-Category-Slug');
 
             $search = $request->header('search');
-            $limit = 100;
+
+            // Pagination is opt-in via ?page= — callers that don't paginate
+            // (search-as-you-type, etc.) keep the old flat limit-100 behavior.
+            $page = $request->query('page');
+            $perPage = max(1, (int) $request->query('per_page', 20));
 
             $categoryId = null;
 
@@ -477,7 +481,24 @@ class ReportController extends Controller
                 });
             }
             $query->orderBy('r.created_at', 'desc');
-            $reports = $query->limit($limit)->get();
+
+            $pagination = null;
+
+            if ($page) {
+                $page = max(1, (int) $page);
+                $total = (clone $query)->count();
+
+                $reports = $query->forPage($page, $perPage)->get();
+
+                $pagination = [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => max(1, (int) ceil($total / $perPage)),
+                ];
+            } else {
+                $reports = $query->limit(100)->get();
+            }
 
             $categoryDetails = null;
 
@@ -506,6 +527,7 @@ class ReportController extends Controller
                 'status' => true,
                 'reports' => $reports,
                 'category' => $categoryDetails,
+                'pagination' => $pagination,
             ]);
         } catch (\Exception $err) {
             return response()->json([
@@ -648,6 +670,58 @@ class ReportController extends Controller
                 'status' => false,
                 'message' => 'Something went wrong',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // GET /api/sitemap-reports?lang=en&page=1&per_page=10000
+    //
+    // Deliberately separate from categoryReports(): the sitemap only needs
+    // report_url + updated_at for every published report, and doesn't want
+    // the category joins/lookup that endpoint does. Ordered by report_id
+    // (not created_at) so a given page number is a stable, deterministic
+    // slice even as new reports are added between requests — required for
+    // paginated sitemaps to not duplicate or skip URLs across chunks.
+    public function sitemapReports(Request $request)
+    {
+        try {
+            $locale = $request->query('lang')
+                ?: ($request->header('Accept-Language') ? substr($request->header('Accept-Language'), 0, 2) : 'en');
+
+            $language = Languages::where('code', $locale)->first()
+                ?: Languages::where('is_default', 1)->first();
+
+            $page = max(1, (int) $request->query('page', 1));
+            $perPage = max(1, min(10000, (int) $request->query('per_page', 10000)));
+
+            $query = DB::table('reports as r')
+                ->join('reports_info as ri', function ($join) use ($language) {
+                    $join->on('r.report_id', '=', 'ri.report_id')
+                        ->where('ri.language_id', $language->id)
+                        ->where('ri.is_deleted', 0)
+                        ->where('ri.is_publish', 1);
+                })
+                ->orderBy('r.report_id')
+                ->select('r.report_url', 'ri.updated_at');
+
+            $total = (clone $query)->count();
+            $reports = $query->forPage($page, $perPage)->get();
+
+            return response()->json([
+                'status' => true,
+                'reports' => $reports,
+                'pagination' => [
+                    'page' => $page,
+                    'per_page' => $perPage,
+                    'total' => $total,
+                    'last_page' => max(1, (int) ceil($total / $perPage)),
+                ],
+            ]);
+        } catch (\Exception $err) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong',
+                'error' => $err->getMessage(),
             ], 500);
         }
     }

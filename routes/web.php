@@ -77,6 +77,9 @@ Route::middleware(['auth.check'])->group(function () {
         Route::post('/store', [ReportKeywordController::class, 'store']);
         Route::post('/update/{id}', [ReportKeywordController::class, 'update']);
         Route::post('/delete', [ReportKeywordController::class, 'delete']);
+
+        Route::get('/download-template', [ReportKeywordController::class, 'downloadTemplate']);
+        Route::post('/import-csv', [ReportKeywordController::class, 'importCsv']);
     });
 });
 

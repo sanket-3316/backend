@@ -56,6 +56,9 @@
             <a class="hover-bg-primary rounded-1" href="#">
                 <i class="fa-solid fa-user me-2"></i> Profile
             </a>
+            <a class="hover-bg-primary rounded-1" href="{{ url('/report-price') }}">
+                <i class="fa-solid fa-tags me-2"></i> Report Price
+            </a>
         </div>
 
         <div class="submenu-popup"></div>

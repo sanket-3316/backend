@@ -69,7 +69,7 @@ function report_years($baseYear = 2025)
 function report_random_stats()
 {
     return [
-        'pages' => rand(150, 200),
+        'pages' => rand(300, 500),
         'views' => rand(40, 50),
         'rating' => number_format(rand(40, 50) / 10, 1) // 4.0 - 5.0
     ];
@@ -149,6 +149,23 @@ function search_from_gpt($user_prompt, $system_prompt = "", $temperature = 0.08,
     $gpt_response = trim($response['choices'][0]['message']['content'], " \t\n\r\0\x08,.");
 
     return $gpt_response;
+}
+
+if (!function_exists('clean_gpt_html_response')) {
+    // GPT sometimes wraps the HTML report body in a markdown code fence
+    // (```html ... ```). Strip the fence markers so only the HTML is stored.
+    // "```html" is removed before "```" so the language tag can't leave a
+    // stray "html" behind.
+    function clean_gpt_html_response($content)
+    {
+        if (!is_string($content)) {
+            return $content;
+        }
+
+        $content = str_ireplace(['```html', '```'], '', $content);
+
+        return trim($content);
+    }
 }
 
 

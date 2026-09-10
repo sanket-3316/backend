@@ -96,7 +96,7 @@ class GenerateReportJob implements ShouldQueue
                 $segments_result,
                 [
                     'base_year' => $years['base_year'],
-                    'forecast_year' => $years['forecast_start_year'],
+                    'forecast_year' => $years['forecast_end_year'],
                     'base_year_market_size' => $market_size_data_result['base_year_market_size'] ?? '',
                     'forecast_market_size' => $market_size_data_result['forecast_market_size'] ?? '',
                     'cagr_percent' => $market_size_data_result['cagr_percent'] ?? '',
@@ -111,6 +111,7 @@ class GenerateReportJob implements ShouldQueue
                 8000,
                 "text"
             );
+            $rd_result = clean_gpt_html_response($rd_result);
             if (empty($rd_result)) {
                 throw now("GPT Not return report description");
             }

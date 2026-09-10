@@ -243,7 +243,7 @@ class ReportController extends Controller
                 $segmentsResult,
                 [
                     'base_year' => $years['base_year'],
-                    'forecast_year' => $years['forecast_start_year'],
+                    'forecast_year' => $years['forecast_end_year'],
                     'base_year_market_size' => $marketSizeResult['base_year_market_size'] ?? '',
                     'forecast_market_size' => $marketSizeResult['forecast_market_size'] ?? '',
                     'cagr_percent' => $marketSizeResult['cagr_percent'] ?? '',
@@ -253,10 +253,11 @@ class ReportController extends Controller
             $description = search_from_gpt(
                 $descriptionPrompt['user'],
                 $descriptionPrompt['system'],
-                0.4,
+                0.8,
                 8000,
                 'text'
             );
+            $description = clean_gpt_html_response($description);
             if (empty($description)) {
                 throw new \Exception('GPT did not return report description');
             }
@@ -275,7 +276,8 @@ class ReportController extends Controller
                     'meta_desc' => $marketSizeResult['meta_description'] ?? '',
 
                     'base_year' => $years['base_year'],
-                    'forecast_year' => $years['forecast_start_year'],
+                    'historic_year' => $years['historic_start_year'],
+                    'forecast_year' => $years['forecast_end_year'],
                     'base_year_market_size' => $marketSizeResult['base_year_market_size'] ?? null,
                     'forecast_year_market_size' => $marketSizeResult['forecast_market_size'] ?? null,
                     'forecast_cagr' => $marketSizeResult['cagr_percent'] ?? null,

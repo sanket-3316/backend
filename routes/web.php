@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportKeywordController;
+use App\Http\Controllers\ReportPriceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RedirectController;
 
@@ -53,6 +54,12 @@ Route::middleware(['auth.check'])->group(function () {
         Route::delete('/languages/{id}', [ReportController::class, 'getReportLanguages']);
         Route::delete('/deleteReport/{id}', [ReportController::class, 'deleteReport']);
     });
+
+    Route::prefix('report-price')->group(function () {
+        Route::get('/', [ReportPriceController::class, 'index']);
+        Route::post('/apply', [ReportPriceController::class, 'applyToAll']);
+    });
+
     Route::prefix('redirect')->group(function () {
         Route::get('/', [RedirectController::class, 'index']);
         Route::get('/list', [RedirectController::class, 'ajaxList']);

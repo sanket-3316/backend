@@ -351,6 +351,7 @@
                         $('#slug').val(slugFromKeyword(data.keyword));
 
                         $('[name="base_year"]').val(data.base_year);
+                        $('[name="historic_year"]').val(data.historic_year);
                         $('[name="forecast_year"]').val(data.forecast_year);
                         $('[name="base_year_market_size"]').val(data.base_year_market_size);
                         $('[name="forecast_year_market_size"]').val(data.forecast_year_market_size);

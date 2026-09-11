@@ -34,6 +34,10 @@
 
                     <form id="reportForm" enctype="multipart/form-data">
                         @csrf
+                        {{-- Set when adding a translation to an EXISTING report — report-level
+                             fields (slug, years, pricing, category…) are then inherited from
+                             that report and not resubmitted. --}}
+                        <input type="hidden" name="translation_of" id="translation_of" value="">
                         <ul class="nav nav-tabs" id="reportTabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-mdb-tab-init href="#report">Report</a>
@@ -82,6 +86,23 @@
                                             @endforeach
                                         </select>
 
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="language_id">Language</label>
+                                        <select id="language_id" name="language_id" class="form-control mb-4">
+                                            @foreach ($languages as $language)
+                                                <option value="{{ $language->id }}"
+                                                    @selected($language->is_default)>{{ $language->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <small class="text-muted" id="translationHint" style="display:none;">
+                                            Adding a translation — slug, years, category and pricing are shared with
+                                            the original report.
+                                        </small>
                                     </div>
                                 </div>
 
@@ -273,10 +294,17 @@
         </div>
     </section>
     <script>
+        const allLanguages = @json($languages->map(fn($l) => ['id' => $l->id, 'name' => $l->name])->values());
+
         $(document).ready(function() {
             $('#addReportBtn').click(function() {
 
                 $('#reportForm')[0].reset();
+                $('#reportForm').removeAttr('data-id');
+                $('#translation_of').val('');
+                $('#translationHint').hide();
+                $('#language_id option').prop('disabled', false);
+                $('.modal-title').text('Add Report');
 
                 tinymce.get('description')?.setContent('');
                 tinymce.get('segmentation')?.setContent('');
@@ -697,43 +725,115 @@
             $(document).on('click', '.showLang', function() {
 
                 let reportId = $(this).data('id');
+                let $btn = $(this);
+
+                // toggle: clicking again collapses the already-open language rows
+                let $existing = $('#reportTable tbody tr[data-lang-parent="' + reportId + '"]');
+                if ($existing.length) {
+                    $existing.remove();
+                    return;
+                }
 
                 $.ajax({
                     url: '/report/languages/' + reportId,
                     method: 'GET',
                     success: function(res) {
 
+                        let usedLanguageIds = res.map(lang => lang.language_id);
                         let html = '';
 
                         res.forEach(lang => {
                             html += `
-                <tr class="bg-light">
+                <tr class="bg-light" data-lang-parent="${reportId}">
                     <td></td>
-                    <td>${lang.report_title} (${lang.language_id})</td>
-                    <td colspan="4">Language Version</td>
+                    <td>${lang.report_title} (${lang.language_name})</td>
+                    <td colspan="2">Language Version</td>
+                    <td colspan="2">
+                        <button class="btn-custom btn-primary-gradient editReportLang"
+                            data-id="${lang.report_id}" data-language-id="${lang.language_id}">Edit</button>
+                    </td>
                 </tr>
                 `;
                         });
 
-                        $('#reportTable tbody').append(html);
+                        let available = allLanguages.filter(l => !usedLanguageIds.includes(l.id));
+
+                        if (available.length) {
+                            let options = available.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+                            html += `
+                <tr class="bg-light" data-lang-parent="${reportId}">
+                    <td></td>
+                    <td colspan="2">
+                        <select class="form-control form-control-sm addTranslationLang" style="display:inline-block;width:auto;">
+                            ${options}
+                        </select>
+                    </td>
+                    <td colspan="2">
+                        <button class="btn-custom btn-primary-gradient addTranslationBtn" data-id="${reportId}">
+                            + Add Translation
+                        </button>
+                    </td>
+                </tr>
+                `;
+                        }
+
+                        $btn.closest('tr').after(html);
                     }
                 });
             });
 
-            $(document).on('click', '.editReport', function() {
+            // Open the modal pre-set to add a NEW language variant of an existing report
+            $(document).on('click', '.addTranslationBtn', function() {
 
-                let id = $(this).data('id');
+                let reportId = $(this).data('id');
+                let languageId = $(this).closest('tr').find('.addTranslationLang').val();
+
+                $('#reportForm')[0].reset();
+                $('#reportForm').removeAttr('data-id');
+                $('#segmentContainer').html('');
+                $('#translation_of').val(reportId);
+                $('#language_id').val(languageId);
+                $('#translationHint').show();
+                $('.modal-title').text('Add Translation');
+
+                tinymce.get('description')?.setContent('');
+                $('#addSegmentBtn').click();
+
+                $('#reportModal').modal('show');
+                setTimeout(() => {
+                    document.querySelectorAll('[data-mdb-tab-init]').forEach((el) => {
+                        new mdb.Tab(el);
+                    });
+                }, 300);
+            });
+
+            // Edit one specific language variant (from the expanded language list)
+            $(document).on('click', '.editReportLang', function() {
+                loadReportIntoForm($(this).data('id'), $(this).data('language-id'));
+            });
+
+            $(document).on('click', '.editReport', function() {
+                loadReportIntoForm($(this).data('id'));
+            });
+
+            function loadReportIntoForm(id, languageId) {
 
                 // reset form
                 $('#reportForm')[0].reset();
                 $('#segmentContainer').html('');
+                $('#translation_of').val('');
+                $('#translationHint').hide();
+                $('.modal-title').text('Edit Report');
 
-                $.get('/report/edit/' + id, function(res) {
+                let url = '/report/edit/' + id + (languageId ? '?language_id=' + languageId : '');
+
+                $.get(url, function(res) {
 
                     // ===== TAB 1 (REPORT) =====
                     $('[name="keyword"]').val(res.keyword);
                     $('[name="slug"]').val(res.report_url);
                     $('[name="category_id"]').val(res.category_id).trigger('change');
+                    $('[name="language_id"]').val(res.language_id);
 
                     $('[name="base_year"]').val(res.base_year);
                     $('[name="forecast_year"]').val(res.forecast_year);
@@ -786,7 +886,7 @@
                     // set edit mode
                     $('#reportForm').attr('data-id', id);
                 });
-            });
+            }
 
             $(document).on('click', '.deleteReport', function() {
 

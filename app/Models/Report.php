@@ -56,7 +56,7 @@ class Report extends Model
 
             $infoId = DB::table('reports_info')->insertGetId([
                 'report_id' => $reportId,
-                'language_id' => 1,
+                'language_id' => $data['language_id'] ?? 1,
                 'report_title' => $data['report_title'],
                 'meta_desc' => $data['meta_desc'],
                 'h1_long_title' => $data['h1_long_title'],
@@ -90,16 +90,69 @@ class Report extends Model
         }
     }
 
-    // 🔹 GET SINGLE REPORT
-    public static function getReportById($id)
+    // 🔹 GET SINGLE REPORT (optionally a specific language variant — a report_id
+    // can have multiple reports_info rows, one per language)
+    public static function getReportById($id, $languageId = null)
     {
-        return DB::table('reports as r')
+        $query = DB::table('reports as r')
             ->select('r.*', 'ri.*', 'rd.*', 'rp.*')
             ->join('reports_info as ri', 'r.report_id', '=', 'ri.report_id')
             ->join('report_descriptions as rd', 'ri.id', '=', 'rd.info_id')
             ->join('report_prices as rp', 'r.report_id', '=', 'rp.report_id')
-            ->where('r.report_id', $id)
-            ->first();
+            ->where('r.report_id', $id);
+
+        if ($languageId) {
+            $query->where('ri.language_id', $languageId);
+        }
+
+        return $query->first();
+    }
+
+    // 🔹 ADD A TRANSLATION to an EXISTING report — inserts a new reports_info +
+    // report_descriptions row for a language this report doesn't have yet.
+    // Report-level fields (reports, report_prices) are shared across every
+    // language variant and are left untouched.
+    public static function addTranslation($reportId, $data)
+    {
+        DB::beginTransaction();
+
+        try {
+            $exists = DB::table('reports_info')
+                ->where('report_id', $reportId)
+                ->where('language_id', $data['language_id'])
+                ->where('is_deleted', 0)
+                ->exists();
+
+            if ($exists) {
+                DB::rollBack();
+                return false;
+            }
+
+            $infoId = DB::table('reports_info')->insertGetId([
+                'report_id' => $reportId,
+                'language_id' => $data['language_id'],
+                'report_title' => $data['report_title'],
+                'meta_desc' => $data['meta_desc'],
+                'h1_long_title' => $data['h1_long_title'],
+                'keyword' => $data['keyword'],
+                'thumbnail' => $data['thumbnail'],
+                'unique_id' => uniqid(),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::table('report_descriptions')->insert([
+                'info_id' => $infoId,
+                'description' => $data['description'],
+                'segmentation' => $data['segmentation'],
+            ]);
+
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return false;
+        }
     }
 
     // 🔹 UPDATE REPORT
@@ -128,13 +181,22 @@ class Report extends Model
                 'updated_at' => now()
             ]);
 
-            // ===== GET REPORT INFO =====
+            // ===== GET REPORT INFO — the SPECIFIC language variant being edited.
+            // Without the language_id filter this would find (and the update
+            // below would then silently overwrite) whichever variant happens
+            // to sort first, corrupting every other translation of this report.
             $info = DB::table('reports_info')
                 ->where('report_id', $id)
+                ->where('language_id', $data['language_id'])
                 ->first();
 
+            if (!$info) {
+                DB::rollBack();
+                return false;
+            }
+
             // ===== UPDATE REPORT INFO =====
-            DB::table('reports_info')->where('report_id', $id)->update([
+            DB::table('reports_info')->where('id', $info->id)->update([
                 'report_title' => $data['report_title'],
                 'meta_desc' => $data['meta_desc'],
                 'h1_long_title' => $data['h1_long_title'],

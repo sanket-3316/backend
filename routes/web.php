@@ -51,7 +51,7 @@ Route::middleware(['auth.check'])->group(function () {
         Route::get('/edit/{id}', [ReportController::class, 'edit']);
         Route::post('/update/{id}', [ReportController::class, 'update']);
         Route::delete('/delete/{id}', [ReportController::class, 'destroy']);
-        Route::delete('/languages/{id}', [ReportController::class, 'getReportLanguages']);
+        Route::get('/languages/{id}', [ReportController::class, 'getReportLanguages']);
         Route::delete('/deleteReport/{id}', [ReportController::class, 'deleteReport']);
     });
 

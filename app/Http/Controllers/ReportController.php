@@ -34,12 +34,11 @@ class ReportController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $isTranslation = $request->filled('translation_of');
+
+            $rules = [
                 'report_title' => 'required',
-                'slug' => 'required|unique:reports,report_url',
-                'base_year' => 'required',
-                'historic_year' => 'required',
-                'forecast_year' => 'required',
+                'language_id' => 'required|numeric',
 
                 'meta_desc' => 'required',
                 'h1_long_title' => 'required',
@@ -47,15 +46,25 @@ class ReportController extends Controller
 
                 'description' => 'required',
                 'segmentation_json' => 'required',
-                // 'primary_interview_insights' => 'required',
+            ];
 
-                'single' => 'required|numeric',
-                'multiuser' => 'required|numeric',
-                'corporate' => 'required|numeric',
-                'excel' => 'required|numeric',
+            if ($isTranslation) {
+                // Adding a translation to an EXISTING report — report-level
+                // fields (slug, years, pricing, category…) are shared and
+                // inherited from the parent report, not re-entered here.
+                $rules['translation_of'] = 'required|exists:reports,report_id';
+            } else {
+                $rules['slug'] = 'required|unique:reports,report_url';
+                $rules['base_year'] = 'required';
+                $rules['historic_year'] = 'required';
+                $rules['forecast_year'] = 'required';
+                $rules['single'] = 'required|numeric';
+                $rules['multiuser'] = 'required|numeric';
+                $rules['corporate'] = 'required|numeric';
+                $rules['excel'] = 'required|numeric';
+            }
 
-                // 'thumbnail' => 'required|image'
-            ]);
+            $request->validate($rules);
 
             // Upload image
             $imageName = null;
@@ -68,7 +77,22 @@ class ReportController extends Controller
             $data['thumbnail'] = $imageName;
             $data['segmentation'] = $request->segmentation_json;
 
-            $result =  Report::createFullReport($data);
+            if ($isTranslation) {
+                $result = Report::addTranslation($request->translation_of, $data);
+
+                if ($result) {
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Translation added successfully'
+                    ]);
+                }
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This report already has a translation in that language'
+                ]);
+            }
+
+            $result = Report::createFullReport($data);
 
             if ($result) {
                 return response()->json([
@@ -88,9 +112,11 @@ class ReportController extends Controller
         }
     }
 
-    public function edit($id)
+    // ?language_id= selects which translation of the report to load; omit it
+    // to fall back to whichever variant the query finds first.
+    public function edit(Request $request, $id)
     {
-        $data = Report::getReportById($id);
+        $data = Report::getReportById($id, $request->query('language_id'));
         return response()->json($data);
     }
 
@@ -102,6 +128,7 @@ class ReportController extends Controller
             $request->validate([
                 'report_title' => 'required',
                 'slug' => 'required|unique:reports,report_url,' . $id . ',report_id',
+                'language_id' => 'required|numeric',
 
                 'base_year' => 'required',
                 'historic_year' => 'required',
@@ -134,13 +161,13 @@ class ReportController extends Controller
                 $request->thumbnail->move(public_path('assets/reports/images'), $imageName);
                 $data['thumbnail'] = $imageName;
             } else {
-                // keep old image
-                $existing = Report::getReportById($id);
+                // keep old image — same language variant being edited
+                $existing = Report::getReportById($id, $data['language_id']);
                 $data['thumbnail'] = $existing->thumbnail ?? null;
             }
 
-            // ✅ UPDATE CALL
-            $result = $this->reportService->saveReport($data);
+            // ✅ UPDATE CALL — updates this specific report_id + language_id variant
+            $result = $this->reportService->saveReport($data, $id);
 
 
             if ($result) {
@@ -313,9 +340,11 @@ class ReportController extends Controller
     }
     public function getReportLanguages($id)
     {
-        $data = DB::table('reports_info')
-            ->where('report_id', $id)
-            ->where('is_deleted', 0)
+        $data = DB::table('reports_info as ri')
+            ->join('languages as l', 'l.id', '=', 'ri.language_id')
+            ->where('ri.report_id', $id)
+            ->where('ri.is_deleted', 0)
+            ->select('ri.id as info_id', 'ri.report_id', 'ri.language_id', 'ri.report_title', 'l.code', 'l.name as language_name')
             ->get();
 
         return response()->json($data);

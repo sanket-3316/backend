@@ -706,6 +706,29 @@ if (!function_exists('build_report_toc')) {
     }
 }
 
+if (!function_exists('get_report_translation_prompt')) {
+    // Unlike the other get_report_*_prompt() helpers (plain PHP arrays), this
+    // one is kept in a JSON file (resources/prompts/report_translation_prompt.json)
+    // so the translation wording can be edited without touching code. Returns
+    // the same ['system' => ..., 'user' => ...] shape, with [[target_language]]
+    // and [[content_json]] left for the caller to fill in.
+    function get_report_translation_prompt()
+    {
+        $path = resource_path('prompts/report_translation_prompt.json');
+
+        if (!file_exists($path)) {
+            return ['system' => '', 'user' => ''];
+        }
+
+        $prompt = json_decode(file_get_contents($path), true) ?: [];
+
+        return [
+            'system' => $prompt['system'] ?? '',
+            'user' => $prompt['user'] ?? '',
+        ];
+    }
+}
+
 function get_report_description_prompt($keyword, $segments, $market, $players)
 {
     return [

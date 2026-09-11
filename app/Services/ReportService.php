@@ -9,7 +9,10 @@ use Illuminate\Support\Str;
 
 class ReportService
 {
-    public function saveReport(array $data)
+    // Pass $reportId to UPDATE an existing report (a specific language variant
+    // of it — $data['language_id'] selects which one); omit it to CREATE a
+    // brand-new report.
+    public function saveReport(array $data, $reportId = null)
     {
         try {
 
@@ -18,6 +21,7 @@ class ReportService
                 'report_title' => 'required|string',
                 'slug' => 'required|string',
                 'category_id' => 'required|numeric',
+                'language_id' => 'required|numeric',
 
                 'base_year' => 'required',
                 'forecast_year' => 'required',
@@ -66,8 +70,10 @@ class ReportService
             // 🔹 Step 4: Slug Safety
             $data['slug'] = Str::slug($data['slug']);
 
-            // 🔹 Step 5: Insert
-            return Report::createFullReport($data);
+            // 🔹 Step 5: Update the existing report, or insert a brand-new one
+            return $reportId
+                ? Report::updateFullReport($reportId, $data)
+                : Report::createFullReport($data);
         } catch (\Exception $e) {
 
             Log::error("ReportService Error: " . $e->getMessage());

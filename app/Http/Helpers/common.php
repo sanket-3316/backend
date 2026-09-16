@@ -45,13 +45,13 @@ function isActiveRoute($route)
     return request()->is($route) ? 'active' : '';
 }
 
-function report_years($baseYear = 2025)
+function report_years($baseYear = 2026)
 {
-    $historicStart = $baseYear - 7;   // 2017
+    $historicStart = $baseYear - 5;   // 2017
     $historicEnd   = $baseYear - 1;   // 2023
 
-    $forecastStart = $baseYear + 1;   // 2025
-    $forecastEnd   = $baseYear + 9;   // 2033
+    $forecastStart = $baseYear ;   // 2025
+    $forecastEnd   = $baseYear + 10;   // 2033
 
     return [
         'base_year' => $baseYear,
@@ -792,6 +792,8 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     <h3>Segment Name</h3>
                     <p>Paragraph 1</p>
                     <p>Paragraph 2</p>
+                    <p>Paragraph 3</p>
+                    <p>Paragraph 4</p>
 
                     ---------------------------------------------------------
 

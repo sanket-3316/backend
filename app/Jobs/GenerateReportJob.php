@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Report;
 use App\Models\ReportKeyword;
 use App\Services\ReportService;
 use Illuminate\Bus\Queueable;
@@ -10,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class GenerateReportJob implements ShouldQueue
@@ -120,22 +122,44 @@ class GenerateReportJob implements ShouldQueue
 
             $service = app(ReportService::class);
 
-            $service->saveReport([
+            // English language id — never hardcode 1, this DB's language ids
+            // aren't guaranteed to line up with insertion order (verified:
+            // en=1 but ja/ko landed as 3/2 here because of seeding order).
+            $englishLanguageId = DB::table('languages')->where('code', 'en')->value('id')
+                ?? DB::table('languages')->where('is_default', 1)->value('id')
+                ?? 1;
+
+            // If this keyword already has an English report, UPDATE it instead
+            // of inserting a new one — inserting again would violate the
+            // unique report_url/keyword constraints and fail loudly for no
+            // reason; regenerating the same keyword should just refresh it.
+            $existingReportId = DB::table('reports_info')
+                ->where('keyword', $this->keyword->keyword)
+                ->where('language_id', $englishLanguageId)
+                ->where('is_deleted', 0)
+                ->value('report_id');
+
+            $saveResult = $service->saveReport([
                 'report_title' => generate_report_title($this->keyword->keyword),
                 'slug' => $this->keyword->keyword . " market",
                 'category_id' => 1,
+                'language_id' => $englishLanguageId,
 
                 'base_year' => $years['base_year'],
                 'historic_year' => $years['historic_start_year'],
                 'forecast_year' => $years['forecast_end_year'],
 
-                'base_year_market_size' => $market_size_data_result['base_year_market_size'],
-                'forecast_year_market_size' => $market_size_data_result['forecast_market_size'],
-                'forecast_cagr' => $market_size_data_result['cagr_percent'],
+                'base_year_market_size' => $market_size_data_result['base_year_market_size'] ?? '',
+                'forecast_year_market_size' => $market_size_data_result['forecast_market_size'] ?? '',
+                'forecast_cagr' => $market_size_data_result['cagr_percent'] ?? 0,
 
-                'key_companys' => $key_players_result['key_players'],
+                'key_companys' => $key_players_result['key_players'] ?? [],
 
-                'meta_desc' => $market_size_data_result['meta_description'],
+                // GPT occasionally omits an optional-looking key even in JSON
+                // mode (this exact field has crashed a real run before with
+                // "Undefined array key" — see ReportKeyword #7) — fall back to
+                // the report title rather than letting the whole job die.
+                'meta_desc' => $market_size_data_result['meta_description'] ?? generate_report_title($this->keyword->keyword),
                 'h1_long_title' => $segments_result['h1_long_title'] ?? generate_report_h1_long_title($this->keyword->keyword, $segments_result['h1_long_title']),
                 'keyword' => $this->keyword->keyword,
                 'thumbnail' =>  $this->keyword->keyword . ' market',
@@ -144,9 +168,15 @@ class GenerateReportJob implements ShouldQueue
                 'segmentation_json' => $segments_result['segments'],
 
                 ...get_report_default_prices(),
-            ]);
-            // Save report (you can store in DB/file later)
-            // For now just mark success
+            ], $existingReportId);
+
+            // Regenerating an existing report leaves its other-language
+            // translations stale — wipe them and reset is_translated_all_lang
+            // so the next report:translate cron run refreshes every language
+            // against the freshly regenerated English content.
+            if ($saveResult && $existingReportId) {
+                Report::resetTranslationsForUpdate($existingReportId, $englishLanguageId);
+            }
 
             $this->keyword->update([
                 'is_report_generated' => true,

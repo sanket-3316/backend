@@ -26,8 +26,10 @@ class ReportService
                 'base_year' => 'required',
                 'forecast_year' => 'required',
 
-                'base_year_market_size' => 'required|numeric',
-                'forecast_year_market_size' => 'required|numeric',
+                // Stored as formatted strings like "$1.5 Billion" / "3.5Bn",
+                // not bare numbers — see get_report_market_size_data_prompt().
+                'base_year_market_size' => 'required|string',
+                'forecast_year_market_size' => 'required|string',
                 'forecast_cagr' => 'required|numeric',
 
                 'key_companys' => 'required',

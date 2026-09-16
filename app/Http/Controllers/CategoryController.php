@@ -7,6 +7,7 @@ use App\Models\CategoryTranslation;
 use App\Models\Languages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -335,7 +336,9 @@ class CategoryController extends Controller
                 $language = Languages::where('code', 'en')->first();
             }
 
-            // 🔹 Fetch categories
+            // 🔹 Fetch categories — strictly scoped to the requested language.
+            // A category with no translation for this language simply isn't
+            // listed here (no English fallback bleeding into other locales).
             $categories = Category::query()
                 ->join('category_translations as ct', function ($join) use ($language) {
                     $join->on('categories.id', '=', 'ct.category_id')

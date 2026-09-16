@@ -28,3 +28,7 @@ Route::get('/report/{slug}/{filename}', [ReportImageController::class, 'render']
 // runtime report card thumbnail (SVG, served with a .svg filename)
 Route::get('/report/thumbnail/{filename}', [ReportImageController::class, 'renderCardThumbnail'])
     ->where('filename', '.*\.svg');
+
+Route::get('/year-test', function () {
+    return report_years();
+});

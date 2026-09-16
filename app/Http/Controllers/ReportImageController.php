@@ -107,12 +107,21 @@ class ReportImageController extends Controller
         $marketWord = match ($lang) {
             'ja' => '市場',
             'ko' => '시장',
+            'zh' => '市场',
+            'es' => 'Mercado',
+            'de' => 'Markt',
+            'fr' => 'Marché',
             default => 'Market',
         };
 
-        // English reads "Keyword Market"; Japanese/Korean append the word
-        // directly with no separating space.
-        $separator = in_array($lang, ['ja', 'ko'], true) ? '' : ' ';
+        // English/French/Spanish read "Keyword Market"; Japanese/Korean/
+        // Chinese append the word directly with no separating space; German
+        // compounds it with a hyphen.
+        $separator = match (true) {
+            in_array($lang, ['ja', 'ko', 'zh'], true) => '',
+            $lang === 'de' => '-',
+            default => ' ',
+        };
         $title = trim($report->keyword) . $separator . $marketWord;
 
         $fontFamily = "'Open Sans','Noto Sans','Segoe UI',Roboto,Arial,Helvetica,sans-serif";

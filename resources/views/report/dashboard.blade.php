@@ -10,13 +10,43 @@
                 <button class=" btn-custom btn-primary-gradient" id="addReportBtn">Add Report</button>
             </div>
 
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-auto">
+                    <label class="form-label mb-1" for="filterCategory">Category</label>
+                    <select id="filterCategory" class="form-control form-control-sm">
+                        <option value="">All categories</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label mb-1" for="filterDateFrom">Published from</label>
+                    <input type="date" id="filterDateFrom" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <label class="form-label mb-1" for="filterDateTo">Published to</label>
+                    <input type="date" id="filterDateTo" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <button type="button" id="clearFiltersBtn" class="btn btn-outline-secondary btn-sm">Clear
+                        filters</button>
+                </div>
+                <div class="col-auto ms-auto">
+                    <button type="button" id="deleteSelectedBtn" class="btn-custom btn-warning-gradient btn-sm">
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+
             <table id="reportTable" class="table">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="selectAllReports"></th>
                         <th>#</th>
                         <th>Report Title</th>
                         <th>Category</th>
-                        <th>Thumbnail</th>
+                        <th>Published Date</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -683,10 +713,49 @@
         }
 
         $(document).ready(function(e) {
-            $('#reportTable').DataTable({
+            // Custom filter: category dropdown + published-date range, on top of
+            // DataTables' own global search box. Reads the raw row data (not the
+            // rendered cell text), so it works off category_id/published_date
+            // directly rather than string-matching rendered labels.
+            $.fn.dataTable.ext.search.push(function(settings, searchData, index, rowData) {
+                if (!rowData || settings.nTable.id !== 'reportTable') {
+                    return true;
+                }
+
+                let categoryFilter = $('#filterCategory').val();
+                if (categoryFilter && String(rowData.category_id) !== String(categoryFilter)) {
+                    return false;
+                }
+
+                let fromDate = $('#filterDateFrom').val();
+                let toDate = $('#filterDateTo').val();
+
+                if (fromDate || toDate) {
+                    let rowDate = rowData.published_date ? String(rowData.published_date).substring(0, 10) : null;
+                    if (!rowDate) return false;
+                    if (fromDate && rowDate < fromDate) return false;
+                    if (toDate && rowDate > toDate) return false;
+                }
+
+                return true;
+            });
+
+            let reportTable = $('#reportTable').DataTable({
                 ajax: '/report/list',
+                order: [
+                    [4, 'desc']
+                ],
                 columns: [{
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `<input type="checkbox" class="rowCheckbox" value="${row.report_id}">`;
+                        }
+                    },
+                    {
                         data: 'report_id',
+                        orderable: false,
                         render: function(data, type, row) {
 
                             // show + only if multiple languages exist
@@ -703,15 +772,21 @@
                     {
                         data: 'category_name'
                     },
-
                     {
-                        data: 'thumbnail',
+                        data: 'published_date',
                         render: function(data) {
-                            return `<img src="/assets/reports/images/${data}" width="50">`;
+                            if (!data) return '—';
+                            let d = new Date(data);
+                            return isNaN(d) ? data : d.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            });
                         }
                     },
                     {
                         data: 'report_id',
+                        orderable: false,
                         render: function(data) {
                             return `
                 <button class=" btn-custom btn-primary-gradient editReport" data-id="${data}">Edit</button>
@@ -720,6 +795,53 @@
                         }
                     }
                 ]
+            });
+
+            $('#filterCategory, #filterDateFrom, #filterDateTo').on('change', function() {
+                reportTable.draw();
+            });
+
+            $('#clearFiltersBtn').on('click', function() {
+                $('#filterCategory').val('');
+                $('#filterDateFrom').val('');
+                $('#filterDateTo').val('');
+                reportTable.draw();
+            });
+
+            // "select all" only affects checkboxes currently rendered on this page
+            $(document).on('change', '#selectAllReports', function() {
+                $('.rowCheckbox').prop('checked', $(this).is(':checked'));
+            });
+
+            $(document).on('click', '#deleteSelectedBtn', function() {
+                let ids = $('.rowCheckbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (!ids.length) {
+                    showToast('Select at least one report first', 'danger');
+                    return;
+                }
+
+                if (!confirm(`Delete ${ids.length} selected report(s)? This permanently removes ` +
+                        `each report and every language translation of it. This cannot be undone.`)) {
+                    return;
+                }
+
+                $.ajax({
+                    url: '/report/bulk-delete',
+                    method: 'POST',
+                    data: {
+                        ids: ids
+                    },
+                    success: function(res) {
+                        showToast(`${res.deleted} report(s) deleted`, 'success');
+                        setTimeout(() => location.reload(), 600);
+                    },
+                    error: function() {
+                        showToast('Bulk delete failed', 'danger');
+                    }
+                });
             });
 
             $(document).on('click', '.showLang', function() {
@@ -746,9 +868,10 @@
                             html += `
                 <tr class="bg-light" data-lang-parent="${reportId}">
                     <td></td>
+                    <td></td>
                     <td>${lang.report_title} (${lang.language_name})</td>
                     <td colspan="2">Language Version</td>
-                    <td colspan="2">
+                    <td>
                         <button class="btn-custom btn-primary-gradient editReportLang"
                             data-id="${lang.report_id}" data-language-id="${lang.language_id}">Edit</button>
                     </td>
@@ -762,6 +885,7 @@
                             let options = available.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
                             html += `
                 <tr class="bg-light" data-lang-parent="${reportId}">
+                    <td></td>
                     <td></td>
                     <td colspan="2">
                         <select class="form-control form-control-sm addTranslationLang" style="display:inline-block;width:auto;">

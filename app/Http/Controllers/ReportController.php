@@ -11,6 +11,7 @@ use App\Models\ReportKeyword;
 use App\Models\UserModel;
 use App\Services\ReportService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ReportController extends Controller
 {
@@ -54,7 +55,10 @@ class ReportController extends Controller
                 // inherited from the parent report, not re-entered here.
                 $rules['translation_of'] = 'required|exists:reports,report_id';
             } else {
-                $rules['slug'] = 'required|unique:reports,report_url';
+                // No 'unique:reports,report_url' here — an existing report
+                // (matched by slug OR keyword+language below) is UPDATED
+                // rather than rejected as a duplicate.
+                $rules['slug'] = 'required';
                 $rules['base_year'] = 'required';
                 $rules['historic_year'] = 'required';
                 $rules['forecast_year'] = 'required';
@@ -89,6 +93,51 @@ class ReportController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'This report already has a translation in that language'
+                ]);
+            }
+
+            // English language id — never hardcode 1, this DB's language ids
+            // aren't guaranteed to line up with insertion order.
+            $englishLanguageId = DB::table('languages')->where('code', 'en')->value('id')
+                ?? DB::table('languages')->where('is_default', 1)->value('id')
+                ?? 1;
+
+            // If a report with this slug OR this keyword (same language)
+            // already exists, UPDATE it instead of inserting a duplicate —
+            // and don't surface a "report already exists" error.
+            $existingReportId = DB::table('reports')
+                ->where('report_url', Str::slug($data['slug']))
+                ->value('report_id');
+
+            if (!$existingReportId) {
+                $existingReportId = DB::table('reports_info')
+                    ->where('keyword', $data['keyword'])
+                    ->where('language_id', $data['language_id'])
+                    ->where('is_deleted', 0)
+                    ->value('report_id');
+            }
+
+            if ($existingReportId) {
+                $result = $this->reportService->saveReport($data, $existingReportId);
+
+                if ($result) {
+                    // Only English-content edits should invalidate the other
+                    // language variants — an edit made directly to a non-
+                    // English variant through this same endpoint shouldn't
+                    // wipe every other translation including English.
+                    if ((int) $data['language_id'] === (int) $englishLanguageId) {
+                        Report::resetTranslationsForUpdate($existingReportId, $englishLanguageId);
+                    }
+
+                    return response()->json([
+                        'status' => true,
+                        'message' => 'Report updated successfully'
+                    ]);
+                }
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Something went wrong'
                 ]);
             }
 
@@ -193,6 +242,25 @@ class ReportController extends Controller
     {
         Report::deleteReport($id);
         return response()->json(['status' => 'deleted']);
+    }
+
+    // Hard-deletes many canonical reports at once (checkbox bulk delete in the
+    // dashboard). Each id is a report_id, which via FK cascade already wipes
+    // every reports_info/report_descriptions/report_prices row under it — so
+    // deleting the English report row here removes every language variant too.
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = Report::bulkDeleteReports($request->ids);
+
+        return response()->json([
+            'status' => true,
+            'deleted' => $deleted,
+        ]);
     }
 
     // Dashboard "Generate" button: same GPT prompt sequence as GenerateReportJob
@@ -387,7 +455,9 @@ class ReportController extends Controller
                 $limit = $limit ?? 6; // category-wise default
             }
 
-            // 🔥 MAIN QUERY
+            // 🔥 MAIN QUERY — strictly scoped to the requested language. A
+            // report not yet translated into this language simply isn't
+            // listed here (no English fallback bleeding into other locales).
             $query = DB::table('reports as r')
                 ->join('reports_info as ri', function ($join) use ($languageId) {
                     $join->on('r.report_id', '=', 'ri.report_id')
@@ -471,7 +541,9 @@ class ReportController extends Controller
                 }
             }
 
-            // 🔥 MAIN QUERY
+            // 🔥 MAIN QUERY — strictly scoped to the requested language. A
+            // report not yet translated into this language simply isn't
+            // listed here (no English fallback bleeding into other locales).
             $query = DB::table('reports as r')
                 ->join('reports_info as ri', function ($join) use ($languageId) {
                     $join->on('r.report_id', '=', 'ri.report_id')
@@ -534,6 +606,9 @@ class ReportController extends Controller
             $categoryDetails = null;
 
             if (!empty($categoryId)) {
+                // Strictly scoped to the requested language — a category not
+                // yet translated returns null (frontend 404s) rather than
+                // silently rendering English on a non-English URL.
                 $categoryDetails = DB::table('categories as c')
                     ->join('category_translations as ct', function ($join) use ($languageId) {
                         $join->on('c.id', '=', 'ct.category_id')
@@ -603,7 +678,10 @@ class ReportController extends Controller
                 ], 301);
             }
 
-            // 🔥 SINGLE MAIN QUERY (JOIN ALL TABLES)
+            // 🔥 SINGLE MAIN QUERY (JOIN ALL TABLES) — strictly scoped to the
+            // requested language. A report not yet translated into this
+            // language 404s rather than silently rendering English on a
+            // non-English URL.
             $report = DB::table('reports as r')
                 ->join('reports_info as ri', function ($join) use ($languageId) {
                     $join->on('r.report_id', '=', 'ri.report_id')

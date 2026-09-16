@@ -228,10 +228,48 @@ class Report extends Model
         }
     }
 
-    // 🔹 DELETE
+    // 🔹 After an EXISTING report's English/source content is updated (instead
+    // of failing as a duplicate), its other-language translations are now
+    // stale. Rather than leaving them in place — where addTranslation()'s
+    // duplicate guard would just skip them as "already done" and nothing
+    // would actually refresh — delete them and reset is_translated_all_lang
+    // to 0, so the next report:translate cron run sees the report as needing
+    // translation again and regenerates every language against the fresh
+    // English content.
+    public static function resetTranslationsForUpdate($reportId, $englishLanguageId)
+    {
+        $staleInfoIds = DB::table('reports_info')
+            ->where('report_id', $reportId)
+            ->where('language_id', '!=', $englishLanguageId)
+            ->pluck('id');
+
+        if ($staleInfoIds->isNotEmpty()) {
+            DB::table('report_descriptions')->whereIn('info_id', $staleInfoIds)->delete();
+            DB::table('reports_info')->whereIn('id', $staleInfoIds)->delete();
+        }
+
+        DB::table('reports')->where('report_id', $reportId)->update([
+            'is_translated_all_lang' => 0,
+            'updated_at' => now(),
+        ]);
+    }
+
+    // 🔹 DELETE (hard delete — FK cascades wipe every reports_info /
+    // report_descriptions / report_prices row for this report_id, so deleting
+    // the canonical report removes every language variant of it too)
     public static function deleteReport($id)
     {
         return DB::table('reports')->where('report_id', $id)->delete();
+    }
+
+    // 🔹 BULK DELETE — same cascade as deleteReport(), for many report_ids at once
+    public static function bulkDeleteReports(array $ids)
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        return DB::table('reports')->whereIn('report_id', $ids)->delete();
     }
 
     // 🔹 GET ALL REPORTS
@@ -248,6 +286,7 @@ class Report extends Model
                 'ri.thumbnail',
                 'r.category_id',
                 'ct.name as category_name',
+                'ri.created_at as published_date',
                 DB::raw('(SELECT COUNT(*) FROM reports_info WHERE report_id = r.report_id) as lang_count')
             )
             ->where('ri.language_id', 1)

@@ -14,6 +14,7 @@ class Lead extends Model
         'message',
         'report_id',
         'category_id',
+        'language_id',
         'status_id',
     ];
 }

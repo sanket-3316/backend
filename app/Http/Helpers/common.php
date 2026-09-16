@@ -47,11 +47,11 @@ function isActiveRoute($route)
 
 function report_years($baseYear = 2026)
 {
-    $historicStart = $baseYear - 5;   // 2017
-    $historicEnd   = $baseYear - 1;   // 2023
+    $historicStart = $baseYear - 5;   // 2021
+    $historicEnd   = $baseYear - 1;   // 2024
 
-    $forecastStart = $baseYear ;   // 2025
-    $forecastEnd   = $baseYear + 10;   // 2033
+    $forecastStart = $baseYear;   // 2025
+    $forecastEnd   = $baseYear + 10;   // 2036
 
     return [
         'base_year' => $baseYear,
@@ -731,6 +731,10 @@ if (!function_exists('get_report_translation_prompt')) {
 
 function get_report_description_prompt($keyword, $segments, $market, $players)
 {
+    $report_year = report_years();
+    $base_year =  $report_year['base_year'];
+    $forecast_period =  $report_year['forecast_period'];
+    $forecast_end_year =  $report_year['forecast_end_year'];
     return [
         "system" => "You are a senior market research analyst. Generate ONLY structured HTML content. Do not add explanations. Follow exact HTML tags and structure.",
 
@@ -755,7 +759,7 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     ==================== OUTPUT STRUCTURE ====================
 
                     1. START WITH:
-                     <h2 class='market-outlook'>{$keyword} Market Outlook </h2> Write a comprehensive paragraph stating the {$keyword} market was valued at <strong>$ billion in 2025</strong> and is projected to reach <strong>$ billion by 2034</strong>, growing at a <strong>CAGR of %</strong> during the forecast period 2026-2034. I need Actual market sizes here and large paragraph.
+                     <h2 class='market-outlook'>{$keyword} Market Outlook </h2> Write a comprehensive paragraph stating the {$keyword} market was valued at <strong>$ billion in {$base_year}</strong> and is projected to reach <strong>$ billion by {$forecast_end_year}</strong>, growing at a <strong>CAGR of %</strong> during the forecast period {$forecast_period}. I need Actual market sizes here and large paragraph.
                     <div>
                     <h2>Key Takeaways</h2>
 
@@ -767,12 +771,12 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
 
                     ---------------------------------------------------------
 
-                    2. <h2>{$keyword} Market Outlook 2025-2034</h2>
+                    2. <h2>{$keyword} Market Outlook {$forecast_period}</h2>
                     - Write 2 large paragraphs (detailed, analytical, professional)
 
                     ---------------------------------------------------------
 
-                    3. <h2>{$keyword} Market Regional Outlook 2025-2034</h2>
+                    3. <h2>{$keyword} Market Regional Outlook {$forecast_period}</h2>
                     - Write 2-3 large paragraphs
                     - Cover regions like North America, Europe, Asia-Pacific
 
@@ -805,12 +809,12 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
 
                     ---------------------------------------------------------
 
-                    7. <h2>{$keyword} Market Opportunities and Threats 2025-2034</h2>
+                    7. <h2>{$keyword} Market Opportunities and Threats {$forecast_period}</h2>
                     - 4 large paragraphs (mix opportunities + risks)
 
                     ---------------------------------------------------------
 
-                    8. <h2>{$keyword} Market Competitor Outlook 2025-2034</h2>
+                    8. <h2>{$keyword} Market Competitor Outlook {$forecast_period}</h2>
                     - Use key players data
                     - 3 large paragraphs
 

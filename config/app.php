@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'palmercruz'),
+    'name' => env('APP_NAME', 'bremontstrategy'),
 
     /*
     |--------------------------------------------------------------------------
@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://www.palmercruz.local'),
+    'url' => env('APP_URL', 'https://www.bremontstrategy.com'),
 
     /*
     |--------------------------------------------------------------------------

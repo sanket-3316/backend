@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\UserModel;
+use App\Models\LoginLog;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -29,6 +30,14 @@ class AuthController extends Controller
         if ($user && Hash::check($request->password, $user->password)) {
             session(['user' => $user]);
 
+            $log = LoginLog::create([
+                'user_id' => $user->id,
+                'login_at' => now(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+            session(['login_log_id' => $log->id]);
+
             return redirect('dashboard');
         }
 
@@ -38,7 +47,12 @@ class AuthController extends Controller
     // Logout
     public function logout()
     {
-        session()->forget('user');
+        $logId = session('login_log_id');
+        if ($logId) {
+            LoginLog::where('id', $logId)->update(['logout_at' => now()]);
+        }
+
+        session()->forget(['user', 'login_log_id']);
         return redirect('/');
     }
 }

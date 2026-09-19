@@ -75,6 +75,16 @@ function report_random_stats()
     ];
 }
 
+if (!function_exists('build_public_report_url')) {
+    // Same URL pattern RunReportInternalLinking already builds report links
+    // with — kept as one helper so the admin dashboard's "view report" links
+    // and the internal-linking cron never drift apart.
+    function build_public_report_url($languageCode, $slug)
+    {
+        return url('/' . $languageCode . '/report/' . $slug);
+    }
+}
+
 function generate_report_title($keyword)
 {
     $report_year = report_years();
@@ -729,17 +739,32 @@ if (!function_exists('get_report_translation_prompt')) {
     }
 }
 
+// Matches the section-by-section structure of the reference sample report
+// (resources exports as a PDF the user supplied — full outlook, key
+// takeaways, key drivers, opportunities/challenges, report scope, per-segment
+// analysis with tables, regional outlook, competitor outlook, pricing
+// analysis, and buying-behaviour) so every generated report reads like that
+// sample regardless of the market.
+//
+// The per-segment-category heading MUST be an <h2> reading exactly
+// "{Segment Category Name} Analysis" (nothing else) — inject_report_charts_into_description()
+// matches on that exact <h2> text to insert that segment's chart image right
+// after it, and matches "2nd <h2> tag overall" to insert the market-overview
+// chart — see that function's docblock/regex in this same file.
 function get_report_description_prompt($keyword, $segments, $market, $players)
 {
     $report_year = report_years();
     $base_year =  $report_year['base_year'];
     $forecast_period =  $report_year['forecast_period'];
     $forecast_end_year =  $report_year['forecast_end_year'];
+    $segmentKeys = array_keys($segments['segments'] ?? []);
+    $segmentHeadingList = implode(', ', array_map(fn($k) => "\"{$k} Analysis\"", $segmentKeys));
+
     return [
-        "system" => "You are a senior market research analyst. Generate ONLY structured HTML content. Do not add explanations. Follow exact HTML tags and structure.",
+        "system" => "You are a senior market research analyst who writes premium, paid market research reports (the same quality/format bought from firms like MarketsandMarkets, Grand View Research, or Bremont Strategy). Generate ONLY structured HTML content. Do not add explanations, commentary, or markdown. Follow the exact HTML structure, heading text, and paragraph/row counts given — they are hard requirements, not suggestions.",
 
         "user" => "
-                    Generate a detailed market research report in HTML format using the following data.
+                    Generate a complete, detailed market research report body in HTML for the market below, following the EXACT section order, heading text, and content rules in OUTPUT STRUCTURE. This must read like a real, premium, paid market research report — specific, analytical, and numbers-driven, never generic filler.
 
                     MARKET: {$keyword}
 
@@ -749,95 +774,155 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     - Forecast Year: {$market['forecast_year']}
                     - Forecast Market Size: {$market['forecast_market_size']}
                     - CAGR: {$market['cagr_percent']}%
+                    - Historic Period: {$report_year['historic_period']}
+                    - Forecast Period: {$forecast_period}
 
                     KEY PLAYERS:
                     " . implode(', ', $players['key_players']) . "
 
-                    SEGMENTS:
+                    SEGMENTS (JSON — category name => sub-segment names, use these EXACT names, do not invent or rename any):
                     " . json_encode($segments['segments']) . "
 
-                    ==================== OUTPUT STRUCTURE ====================
+                    ==================== OUTPUT STRUCTURE (follow in this exact order) ====================
 
-                    1. START WITH:
-                     <h2 class='market-outlook'>{$keyword} Market Outlook </h2> Write a comprehensive paragraph stating the {$keyword} market was valued at <strong>$ billion in {$base_year}</strong> and is projected to reach <strong>$ billion by {$forecast_end_year}</strong>, growing at a <strong>CAGR of %</strong> during the forecast period {$forecast_period}. I need Actual market sizes here and large paragraph.
-                    <div>
-                    <h2>Key Takeaways</h2>
-
-                    <ul>
-                    <li>Use real market numbers from provided data</li>
-                    <li>Include 7-8 bullet points like market size, CAGR, region dominance, drivers, key companies</li>
-                    </ul>
-                    </div>
+                    1. <h2>{$keyword} Market Outlook</h2>
+                    Write 5-6 detailed, analytical paragraphs (<p> each), in this order:
+                    - Paragraph 1 (required, use <strong> on the numbers): state the {$keyword} market was valued at <strong>{$market['base_year_market_size']} in {$base_year}</strong> and is projected to reach <strong>{$market['forecast_market_size']} by {$forecast_end_year}</strong>, growing at a <strong>CAGR of {$market['cagr_percent']}%</strong> during the forecast period {$forecast_period}. Explain briefly why (1-2 sentences).
+                    - Paragraph 2: characterize the market and the core technology/product/service — what it is, how it works, what makes it distinct from alternative/conventional approaches.
+                    - Paragraph 3: what is driving overall demand (structural/industry-level forces).
+                    - Paragraph 4: technology development trends and where R&D/product focus is heading.
+                    - Paragraph 5: competitive dynamics — how vendors compete (price, technical performance, distribution, support) and what most influences adoption.
+                    - Paragraph 6 (optional): any additional market-specific nuance worth covering.
 
                     ---------------------------------------------------------
 
-                    2. <h2>{$keyword} Market Outlook {$forecast_period}</h2>
-                    - Write 2 large paragraphs (detailed, analytical, professional)
+                    2. <h2>{$keyword} Market Key Takeaways</h2>
+                    <ul> with 4-5 <li> bullets. Each bullet is a full, data-rich sentence (not a fragment) using real numbers derived from the market data and segmentation above — market size/CAGR, a leading segment's share and growth rate, the leading region's share, and a demand driver. No generic bullets.
 
                     ---------------------------------------------------------
 
-                    3. <h2>{$keyword} Market Regional Outlook {$forecast_period}</h2>
-                    - Write 2-3 large paragraphs
-                    - Cover regions like North America, Europe, Asia-Pacific
+                    3. <h2>{$keyword} Market Key Drivers</h2>
+                    First, an HTML <table> with header row <th>Drivers</th><th>Impact</th>, one row per driver, 4-5 rows total. Driver names short (2-5 words, <strong> or <td><strong>), Impact is one concise sentence.
+                    Then, for EACH driver row in that table, in the same order, output:
+                    <h3>{Driver Name}</h3>
+                    <p>One paragraph (60-100 words) explaining that specific driver's mechanism and effect on demand.</p>
 
                     ---------------------------------------------------------
 
-                    4. <h2>Key Growth Drivers of the {$keyword} Market</h2>
-                    - Each driver in separate <div>
-                    - Each div must contain:
-                    <h3>Driver Title</h3>
-                    <p>Large paragraph explanation</p>
+                    4. <h2>{$keyword} Market Opportunities and Challenges</h2>
+                    First, an HTML <table> with header row <th>Opportunity</th><th>Challenges</th>, 3 rows pairing one opportunity with one challenge per row (short phrases, 2-5 words each).
+                    Then exactly 2 paragraphs: one paragraph (100-150 words) elaborating the opportunities in the table, one paragraph (100-150 words) elaborating the challenges/threats in the table.
 
                     ---------------------------------------------------------
 
-                    5. <h2>{$keyword} Market Segment Analysis</h2>
-                    - Use given segmentation
-                    - For each parent segment:
-                    <h3>Segment Name</h3>
-                    <p>Paragraph 1</p>
-                    <p>Paragraph 2</p>
-                    <p>Paragraph 3</p>
-                    <p>Paragraph 4</p>
+                    5. <h2>{$keyword} Market Report Scope</h2>
+                    A single 2-column HTML <table> (header <th>Attributes</th><th>Details</th>) with one row per attribute, in this order:
+                    - Report Title: \"{$keyword} Market Research Report {$forecast_end_year}\"
+                    - One row PER segmentation category above, using its exact name as the attribute (e.g. row label = the category name from SEGMENTS), value = comma-separated list of its exact sub-segment names
+                    - Regions Covered: North America, Europe, Asia Pacific, Latin America, Middle East & Africa
+                    - Countries Covered: realistic countries grouped by the regions above (e.g. North America (United States, Canada), Europe (Germany, France, UK, Italy, Spain, Rest of Europe), etc.)
+                    - Base Year: {$base_year}
+                    - Historic Data: {$report_year['historic_period']}
+                    - Forecast Period: {$forecast_period}
+                    - Number of Pages: a realistic number between 250 and 320
+                    - Number of Tables & Figures: a realistic number between 300 and 450
+                    - Customization Available: \"Yes, the report can be customized as per your need.\"
+                    No paragraphs in this section — table only.
 
                     ---------------------------------------------------------
 
-                    6. <h2>{$keyword} Segment Comparison</h2>
-                    - Create HTML table
-                    - 8-10 rows
-                    - Columns: Segment | Market Share | Growth Rate | Key Insight
-                    - Keep text short
+                    6. <h2>{$keyword} Market Segment Analysis</h2>
+                    One short intro paragraph (2-3 sentences) previewing the segmentation categories covered.
+
+                    Then, for EACH segment category in SEGMENTS above, in the same order, output a separate block:
+                    <h2>{Segment Category Name} Analysis</h2> — the heading text MUST be exactly the category name followed by the single word \" Analysis\" and nothing else (no \"Market\", no extra words). Category names to use, in order: {$segmentHeadingList}.
+                    Then an HTML <table> (header <th>Segment</th><th>Market Share</th><th>Growth Rate</th><th>Key Insight</th>) with exactly one row per sub-segment name in that category (use the exact sub-segment names, realistic share %/growth rate that sum sensibly, short key insight phrase).
+                    Then 2-3 paragraphs (80-120 words each) analyzing the sub-segments in that category — their relative demand drivers, use cases, and why the leading one leads.
 
                     ---------------------------------------------------------
 
-                    7. <h2>{$keyword} Market Opportunities and Threats {$forecast_period}</h2>
-                    - 4 large paragraphs (mix opportunities + risks)
+                    7. <h2>{$keyword} Market Regional Outlook</h2>
+                    First, a 2-column HTML <table> (header <th>Regional Outlook</th><th></th>) with 4 rows: \"Largest Market\" => region name, \"Fastest Growing Market\" => region name, \"Emerging Countries\" => 3 country names, \"Future Outlook\" => one-sentence summary.
+                    Then exactly 5 paragraphs (80-120 words each), one per region in this order: North America, Europe, Asia-Pacific, Latin America, Middle East & Africa — each covering that region's specific demand drivers, maturity, and outlook.
 
                     ---------------------------------------------------------
 
-                    8. <h2>{$keyword} Market Competitor Outlook {$forecast_period}</h2>
-                    - Use key players data
-                    - 3 large paragraphs
+                    8. <h2>{$keyword} Market Competitor Outlook</h2>
+                    A 2-column HTML <table> (header <th>Competitor Outlook</th><th></th>) with 3 rows:
+                    - \"Market Leader\" => a <ul><li> with exactly 1 company (pick the most prominent from KEY PLAYERS)
+                    - \"Key Players\" => a <ul><li> list of 5-8 more companies from KEY PLAYERS
+                    - \"Key Competitive Factors\" => a <ul><li> list of 4-5 short factor names (e.g. Product Performance, Technical Support, Distribution Network, Project References, Pricing)
+                    No paragraphs in this section — table only.
 
                     ---------------------------------------------------------
 
-                    9. <h2>{$keyword} Market Latest Industry Developments</h2>
-                    - 10-15 points
+                    9. <h2>{$keyword} Pricing Analysis</h2>
+                    Exactly 2 paragraphs (100-150 words each, no table): paragraph 1 on what drives pricing/cost variation in this market (formulation/specification/scale/region), paragraph 2 on price sensitivity vs. value-driven buying behavior.
 
-                    Example:
-                    <ul>
-                    <li>Company X launched...<li>
-                    </ul>
+                    ---------------------------------------------------------
+
+                    10. <h2>{$keyword} Consumer Buying Behaviour / Preference Analysis</h2>
+                    <h3>Key Purchase Criteria</h3>
+                    An HTML <table> (header <th>Buying Factor</th><th>Relative Importance</th><th>Reason</th>) with 5 rows — realistic buying factors for this market (e.g. performance, durability/reliability, certification/compliance, total cost, differentiating capability), Relative Importance one of Very High/High/Medium-High/Medium, Reason one short phrase.
+                    Then exactly 2 paragraphs (100-150 words each) describing who the typical buyers are (roles/titles relevant to this market) and what most influences their purchase decision.
 
                     ---------------------------------------------------------
 
                     IMPORTANT RULES:
-                    - Use ONLY HTML tags: h2, h3, p, ul, li, table, div
-                    - Do NOT use markdown
-                    - Do NOT add explanations
-                    - Keep paragraphs large and detailed
-                    - Make content look like premium market research report
+                    - Use ONLY these HTML tags: h2, h3, p, ul, li, table, thead, tbody, tr, th, td, strong
+                    - Do NOT use markdown, do NOT use div
+                    - Do NOT add any explanations, headers, or text outside the structure above
+                    - Every <h2> heading text must be EXACTLY as specified above — do not add \"Market\" or reword unless explicitly told to
+                    - Paragraphs must be substantive and specific to {$keyword}, never generic filler
+                    - All tables must use proper <table><thead><tr><th> / <tbody><tr><td> structure
 
-                    Return ONLY HTML.
+                    Return ONLY HTML — no markdown code fences.
+                    "
+    ];
+}
+
+// Generates the FAQ section stored separately in report_descriptions.primary_interview_insights
+// (kept apart from `description` so it can be swapped/edited independently and
+// rendered in its own place on the report page).
+function get_report_faq_prompt($keyword, $market)
+{
+    $report_year = report_years();
+    $forecast_end_year = $report_year['forecast_end_year'];
+
+    return [
+        "system" => "You are a senior market research analyst. Generate ONLY structured HTML content for a report's FAQ section. Do not add explanations or markdown.",
+
+        "user" => "
+                    Generate a Frequently Asked Questions section in HTML for the {$keyword} market report.
+
+                    MARKET DATA:
+                    - Base Year: {$market['base_year']} — Market Size: {$market['base_year_market_size']}
+                    - Forecast Year: {$market['forecast_year']} — Market Size: {$market['forecast_market_size']}
+                    - CAGR: {$market['cagr_percent']}%
+
+                    OUTPUT STRUCTURE:
+                    <h2>Frequently Asked Questions</h2>
+                    Followed by exactly 6-8 question/answer pairs, each as:
+                    <h3>{Question}?</h3>
+                    <p>{Answer — 1-3 sentences, specific and data-driven where relevant}</p>
+
+                    Cover these topics, one FAQ each (rephrase naturally as real user questions):
+                    - What is the current/base year size of the {$keyword} market
+                    - What is the projected market size by {$forecast_end_year}
+                    - What is the market's CAGR / growth rate during the forecast period
+                    - Which region leads / is fastest-growing in this market
+                    - Which segment holds the largest share
+                    - Who are the key players/companies in this market
+                    - What are the key growth drivers
+                    - Is the report customizable (answer: yes, the report can be customized as per specific requirements)
+
+                    IMPORTANT RULES:
+                    - Use ONLY these HTML tags: h2, h3, p
+                    - Do NOT use markdown or div
+                    - Do NOT add explanations outside the structure
+                    - Answers must be specific to {$keyword}, not generic
+
+                    Return ONLY HTML — no markdown code fences.
                     "
     ];
 }

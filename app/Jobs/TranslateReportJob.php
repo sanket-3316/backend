@@ -47,7 +47,8 @@ class TranslateReportJob implements ShouldQueue
                 'ri.keyword',
                 'ri.thumbnail',
                 'rd.description',
-                'rd.segmentation'
+                'rd.segmentation',
+                'rd.primary_interview_insights'
             )
             ->first();
 
@@ -85,6 +86,7 @@ class TranslateReportJob implements ShouldQueue
                     'segmentation' => is_array($translated['segmentation'] ?? null)
                         ? json_encode($translated['segmentation'], JSON_UNESCAPED_UNICODE)
                         : ($translated['segmentation'] ?? $source->segmentation),
+                    'primary_interview_insights' => $translated['primary_interview_insights'] ?? $source->primary_interview_insights,
                 ]);
 
                 if (!$saved) {
@@ -119,6 +121,7 @@ class TranslateReportJob implements ShouldQueue
             'keyword' => $source->keyword,
             'description' => (string) $source->description,
             'segmentation' => json_decode($source->segmentation, true) ?: [],
+            'primary_interview_insights' => (string) ($source->primary_interview_insights ?? ''),
         ];
 
         $systemPrompt = str_replace('[[target_language]]', $targetLanguageName, $prompt['system']);

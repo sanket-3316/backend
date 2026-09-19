@@ -71,7 +71,7 @@ class Report extends Model
                 'info_id' => $infoId,
                 'description' => $data['description'],
                 'segmentation' => $data['segmentation'],
-                // 'primary_interview_insights' => $data['primary_interview_insights']
+                'primary_interview_insights' => $data['primary_interview_insights'] ?? null,
             ]);
             DB::table('report_prices')->insert([
                 'report_id' => $reportId,
@@ -145,6 +145,7 @@ class Report extends Model
                 'info_id' => $infoId,
                 'description' => $data['description'],
                 'segmentation' => $data['segmentation'],
+                'primary_interview_insights' => $data['primary_interview_insights'] ?? null,
             ]);
 
             DB::commit();
@@ -206,10 +207,19 @@ class Report extends Model
             ]);
 
             // ===== UPDATE DESCRIPTION =====
-            DB::table('report_descriptions')->where('info_id', $info->id)->update([
+            // primary_interview_insights (FAQs) is only touched when the
+            // caller actually supplies it — the dashboard's manual edit form
+            // doesn't send this field, and leaving it out of the update
+            // preserves whatever FAQ content already exists instead of
+            // silently wiping it on every unrelated edit.
+            $descriptionUpdate = [
                 'description' => $data['description'],
                 'segmentation' => $data['segmentation'],
-            ]);
+            ];
+            if (array_key_exists('primary_interview_insights', $data)) {
+                $descriptionUpdate['primary_interview_insights'] = $data['primary_interview_insights'];
+            }
+            DB::table('report_descriptions')->where('info_id', $info->id)->update($descriptionUpdate);
 
             // ===== UPDATE PRICE =====
             DB::table('report_prices')->where('report_id', $id)->update([
@@ -275,10 +285,11 @@ class Report extends Model
     // 🔹 GET ALL REPORTS
     public static function getAllReports()
     {
-        return DB::table('reports as r')
+        $reports = DB::table('reports as r')
             ->join('reports_info as ri', 'r.report_id', '=', 'ri.report_id')
             // ->leftJoin('categories as c', 'r.category_id', '=', 'c.id')
             ->leftJoin('category_translations as ct', 'r.category_id', '=', 'ct.category_id')
+            ->leftJoin('languages as l', 'l.id', '=', 'ri.language_id')
             ->select(
                 'r.report_id',
                 'r.report_url',
@@ -287,12 +298,19 @@ class Report extends Model
                 'r.category_id',
                 'ct.name as category_name',
                 'ri.created_at as published_date',
+                'r.updated_at as updated_date',
+                'l.code as language_code',
                 DB::raw('(SELECT COUNT(*) FROM reports_info WHERE report_id = r.report_id) as lang_count')
             )
             ->where('ri.language_id', 1)
             ->where('ct.language_id', 1)
             ->where('ri.is_deleted', 0)
-            ->orderBy('r.created_at', 'desc')
+            ->orderBy('r.updated_at', 'desc')
             ->get();
+
+        return $reports->map(function ($report) {
+            $report->public_url = build_public_report_url($report->language_code ?: 'en', $report->report_url);
+            return $report;
+        });
     }
 }

@@ -47,6 +47,7 @@
                         <th>Report Title</th>
                         <th>Category</th>
                         <th>Published Date</th>
+                        <th>Updated At</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -81,6 +82,10 @@
 
                             <li class="nav-item">
                                 <a class="nav-link" data-mdb-tab-init href="#price">Price</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" data-mdb-tab-init href="#faqs">FAQs</a>
                             </li>
                         </ul>
 
@@ -312,6 +317,15 @@
 
                             </div>
 
+                            <!-- 🔹 TAB 6: FAQs (optional) -->
+                            <div class="tab-pane fade" id="faqs">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <label class="mb-0">FAQs <span class="text-muted">(optional)</span></label>
+                                    <button type="button" id="addFaqBtn" class="btn btn-success btn-sm">+ Add FAQ</button>
+                                </div>
+                                <div id="faqContainer"></div>
+                            </div>
+
                         </div>
 
                         <div class="p-3 text-end">
@@ -339,7 +353,8 @@
                 tinymce.get('description')?.setContent('');
                 tinymce.get('segmentation')?.setContent('');
                 tinymce.get('swot_analysis')?.setContent('');
-                tinymce.get('primary_interview_insights')?.setContent('');
+
+                $('#faqContainer').html('');
 
                 // auto-pick a random category so the field isn't left blank
                 let $categoryOptions = $('#category_id option[value!=""]');
@@ -441,6 +456,9 @@
                         $('[name="corporate"]').val(data.corporate);
                         $('[name="excel"]').val(data.excel);
 
+                        // ===== TAB 5 (FAQs) =====
+                        loadFaqs(data.primary_interview_insights || '');
+
                         showToast('Report content generated — review and save', 'success');
                     },
                     error: function(xhr) {
@@ -525,6 +543,72 @@
             $(this).parent().remove();
         });
 
+        // ===== FAQs (optional) =====
+        function appendFaqBlock(question, answer) {
+            let $block = $(`
+            <div class="card p-3 mb-2 faq-block">
+                <div class="mb-2">
+                    <input type="text" class="form-control faq-question" placeholder="Question">
+                </div>
+                <div class="mb-2">
+                    <textarea class="form-control faq-answer" rows="2" placeholder="Answer"></textarea>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-faq">Remove</button>
+                </div>
+            </div>
+            `);
+            $block.find('.faq-question').val(question || '');
+            $block.find('.faq-answer').val(answer || '');
+            $('#faqContainer').append($block);
+        }
+
+        $('#addFaqBtn').click(function() {
+            appendFaqBlock();
+        });
+
+        $(document).on('click', '.remove-faq', function() {
+            $(this).closest('.faq-block').remove();
+        });
+
+        // Parses the "<h2>...</h2><h3>Q</h3><p>A</p>..." HTML this same form
+        // (and the GPT-generated FAQ prompt) produces, back into rows.
+        function loadFaqs(html) {
+            $('#faqContainer').html('');
+            if (!html) return;
+
+            let temp = document.createElement('div');
+            temp.innerHTML = html;
+
+            temp.querySelectorAll('h3').forEach(function(h3) {
+                let question = h3.textContent.trim();
+                let next = h3.nextElementSibling;
+                let answer = (next && next.tagName === 'P') ? next.textContent.trim() : '';
+                appendFaqBlock(question, answer);
+            });
+        }
+
+        // Serializes filled rows into the same HTML shape stored in
+        // primary_interview_insights — empty rows (no question AND no
+        // answer) are silently skipped since FAQs are entirely optional.
+        function getFaqsHtml() {
+            let $wrap = $('<div>');
+            let hasAny = false;
+
+            $('.faq-block').each(function() {
+                let question = $(this).find('.faq-question').val().trim();
+                let answer = $(this).find('.faq-answer').val().trim();
+
+                if (!question && !answer) return;
+
+                hasAny = true;
+                $('<h3>').text(question).appendTo($wrap);
+                $('<p>').text(answer).appendTo($wrap);
+            });
+
+            return hasAny ? '<h2>Frequently Asked Questions</h2>' + $wrap.html() : '';
+        }
+
         $(document).on('click', '#reportTabs .nav-link', function(e) {
             e.preventDefault();
 
@@ -584,6 +668,20 @@
                 $('#segmentation_json').val(segmentJSON);
             }
 
+            // ===== FAQs HTML =====
+            let faqsHtml = getFaqsHtml();
+
+            if ($('#primary_interview_insights_field').length === 0) {
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'primary_interview_insights_field',
+                    name: 'primary_interview_insights',
+                    value: faqsHtml
+                }).appendTo('#reportForm');
+            } else {
+                $('#primary_interview_insights_field').val(faqsHtml);
+            }
+
             let valid = true;
 
             function markTab(index, status) {
@@ -635,6 +733,33 @@
 
             markTab(3, tab4);
             if (!tab4) valid = false;
+
+            // ===== TAB 5 (FAQs — optional, but a half-filled row is invalid:
+            // a question needs an answer, and an answer needs a question) =====
+            let validFaqs = true;
+
+            $('.faq-block').each(function() {
+                let $question = $(this).find('.faq-question');
+                let $answer = $(this).find('.faq-answer');
+                let question = $question.val().trim();
+                let answer = $answer.val().trim();
+
+                $question.removeClass('is-invalid');
+                $answer.removeClass('is-invalid');
+
+                if (question && !answer) {
+                    $answer.addClass('is-invalid');
+                    validFaqs = false;
+                }
+
+                if (answer && !question) {
+                    $question.addClass('is-invalid');
+                    validFaqs = false;
+                }
+            });
+
+            markTab(4, validFaqs);
+            if (!validFaqs) valid = false;
 
             if (!valid) {
                 alert('Fill all required fields');
@@ -743,7 +868,7 @@
             let reportTable = $('#reportTable').DataTable({
                 ajax: '/report/list',
                 order: [
-                    [4, 'desc']
+                    [5, 'desc']
                 ],
                 columns: [{
                         data: null,
@@ -767,13 +892,30 @@
                         }
                     },
                     {
-                        data: 'report_title'
+                        data: 'report_title',
+                        render: function(data, type, row) {
+                            if (type !== 'display') return data;
+                            if (!row.public_url) return data;
+                            return `<a href="${row.public_url}" target="_blank" rel="noopener noreferrer">${data}</a>`;
+                        }
                     },
                     {
                         data: 'category_name'
                     },
                     {
                         data: 'published_date',
+                        render: function(data) {
+                            if (!data) return '—';
+                            let d = new Date(data);
+                            return isNaN(d) ? data : d.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                        }
+                    },
+                    {
+                        data: 'updated_date',
                         render: function(data) {
                             if (!data) return '—';
                             let d = new Date(data);
@@ -865,12 +1007,15 @@
                         let html = '';
 
                         res.forEach(lang => {
+                            let titleHtml = lang.public_url
+                                ? `<a href="${lang.public_url}" target="_blank" rel="noopener noreferrer">${lang.report_title}</a>`
+                                : lang.report_title;
                             html += `
                 <tr class="bg-light" data-lang-parent="${reportId}">
                     <td></td>
                     <td></td>
-                    <td>${lang.report_title} (${lang.language_name})</td>
-                    <td colspan="2">Language Version</td>
+                    <td>${titleHtml} (${lang.language_name})</td>
+                    <td colspan="3">Language Version</td>
                     <td>
                         <button class="btn-custom btn-primary-gradient editReportLang"
                             data-id="${lang.report_id}" data-language-id="${lang.language_id}">Edit</button>
@@ -892,7 +1037,7 @@
                             ${options}
                         </select>
                     </td>
-                    <td colspan="2">
+                    <td colspan="3">
                         <button class="btn-custom btn-primary-gradient addTranslationBtn" data-id="${reportId}">
                             + Add Translation
                         </button>
@@ -1003,6 +1148,9 @@
                     $('[name="multiuser"]').val(res.multiuser);
                     $('[name="corporate"]').val(res.corporate);
                     $('[name="excel"]').val(res.excel);
+
+                    // ===== TAB 5 (FAQs) =====
+                    loadFaqs(res.primary_interview_insights || '');
 
                     // open modal
                     $('#reportModal').modal('show');

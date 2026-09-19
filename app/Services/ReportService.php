@@ -40,6 +40,7 @@ class ReportService
 
                 'description' => 'required',
                 'segmentation_json' => 'required',
+                'primary_interview_insights' => 'nullable|string',
 
                 'single' => 'required|numeric',
                 'multiuser' => 'required|numeric',

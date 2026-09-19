@@ -110,7 +110,7 @@ class GenerateReportJob implements ShouldQueue
                 $description_prompt['user'],
                 $description_prompt['system'],
                 0.4,
-                8000,
+                14000,
                 "text"
             );
             $rd_result = clean_gpt_html_response($rd_result);
@@ -119,6 +119,26 @@ class GenerateReportJob implements ShouldQueue
             }
             // $rd_result =  json_decode($rd_result, true);
 
+            // Generate FAQ section — stored separately (report_descriptions.
+            // primary_interview_insights), not appended into the description.
+            $faq_prompt = get_report_faq_prompt(
+                $this->keyword->keyword,
+                [
+                    'base_year' => $years['base_year'],
+                    'forecast_year' => $years['forecast_end_year'],
+                    'base_year_market_size' => $market_size_data_result['base_year_market_size'] ?? '',
+                    'forecast_market_size' => $market_size_data_result['forecast_market_size'] ?? '',
+                    'cagr_percent' => $market_size_data_result['cagr_percent'] ?? '',
+                ]
+            );
+            $faq_result = search_from_gpt(
+                $faq_prompt['user'],
+                $faq_prompt['system'],
+                0.4,
+                3000,
+                "text"
+            );
+            $faq_result = clean_gpt_html_response($faq_result);
 
             $service = app(ReportService::class);
 
@@ -166,6 +186,7 @@ class GenerateReportJob implements ShouldQueue
 
                 'description' => $rd_result,
                 'segmentation_json' => $segments_result['segments'],
+                'primary_interview_insights' => $faq_result ?: null,
 
                 ...get_report_default_prices(),
             ], $existingReportId);

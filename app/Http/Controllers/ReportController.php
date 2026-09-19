@@ -357,6 +357,21 @@ class ReportController extends Controller
                 throw new \Exception('GPT did not return report description');
             }
 
+            // FAQ section — optional, mirrors GenerateReportJob; a failure
+            // here shouldn't fail the whole preview, so no exception is thrown.
+            $faqPrompt = get_report_faq_prompt(
+                $rawKeyword,
+                [
+                    'base_year' => $years['base_year'],
+                    'forecast_year' => $years['forecast_end_year'],
+                    'base_year_market_size' => $marketSizeResult['base_year_market_size'] ?? '',
+                    'forecast_market_size' => $marketSizeResult['forecast_market_size'] ?? '',
+                    'cagr_percent' => $marketSizeResult['cagr_percent'] ?? '',
+                ]
+            );
+            $faqs = search_from_gpt($faqPrompt['user'], $faqPrompt['system'], 0.4, 3000, 'text');
+            $faqs = clean_gpt_html_response($faqs) ?: '';
+
             $keywordModel->update([
                 'is_report_generated' => true,
                 'report_status' => 'completed',
@@ -380,6 +395,7 @@ class ReportController extends Controller
                     'key_companys' => $keyPlayersResult['key_players'] ?? [],
                     'segmentation' => $segmentsResult['segments'] ?? [],
                     'description' => $description,
+                    'primary_interview_insights' => $faqs,
 
                     // sensible defaults GPT doesn't produce
                     'pages' => report_random_stats()['pages'],
@@ -410,10 +426,16 @@ class ReportController extends Controller
     {
         $data = DB::table('reports_info as ri')
             ->join('languages as l', 'l.id', '=', 'ri.language_id')
+            ->join('reports as r', 'r.report_id', '=', 'ri.report_id')
             ->where('ri.report_id', $id)
             ->where('ri.is_deleted', 0)
-            ->select('ri.id as info_id', 'ri.report_id', 'ri.language_id', 'ri.report_title', 'l.code', 'l.name as language_name')
+            ->select('ri.id as info_id', 'ri.report_id', 'ri.language_id', 'ri.report_title', 'l.code', 'l.name as language_name', 'r.report_url')
             ->get();
+
+        $data = $data->map(function ($row) {
+            $row->public_url = build_public_report_url($row->code, $row->report_url);
+            return $row;
+        });
 
         return response()->json($data);
     }

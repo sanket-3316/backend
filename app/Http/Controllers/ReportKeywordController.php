@@ -90,8 +90,16 @@ class ReportKeywordController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'keyword' => 'required|unique:report_keywords,keyword'
+            'keyword' => 'required'
         ]);
+
+        // If this keyword is already queued/generated, replace it with a
+        // fresh row (status reset to pending, error cleared) instead of
+        // blocking as a duplicate — this is how an admin re-queues a market
+        // for regeneration by re-adding its keyword. The generate job itself
+        // finds the existing report by keyword text and updates it in place,
+        // so the underlying report is never duplicated either.
+        ReportKeyword::whereRaw('LOWER(keyword) = ?', [mb_strtolower($request->keyword)])->delete();
 
         ReportKeyword::create([
             'keyword' => $request->keyword,

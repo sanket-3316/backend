@@ -267,6 +267,11 @@ class ReportImageController extends Controller
             . '</svg>';
     }
 
+    // Fully computed at runtime — no template file, no image library. A real
+    // donut chart built from this segment category's actual sub-segment
+    // names (their share of the whole is estimated, not stored anywhere —
+    // see buildSegmentShares()), matching the market-overview bar chart's
+    // "no library, generate the geometry ourselves" approach.
     private function buildSegmentSvg($report, $imageKey)
     {
         $segments = is_string($report->segmentation)
@@ -281,23 +286,194 @@ class ReportImageController extends Controller
             }
         }
 
-        if (!$matchedLabel) {
+        if (!$matchedLabel || empty($segments[$matchedLabel])) {
             return null;
         }
 
-        $path = public_path('uploads/reports/thumbnail/slide2.SVG');
-        if (!file_exists($path)) {
+        $subSegments = array_values(array_filter(array_map('trim', $segments[$matchedLabel])));
+        if (empty($subSegments)) {
             return null;
         }
 
-        $svg = file_get_contents($path);
+        $shares = $this->buildSegmentShares($report->keyword . '|' . $matchedLabel, $subSegments);
 
-        $heading = "Global {$report->keyword} Market Share (%) {$matchedLabel}";
+        $heading = "{$report->keyword} Market Share (%), {$matchedLabel}";
 
-        $replacements = [
-            '[[heading_block]]' => build_wrapped_center_text($heading, 622, 114, 'Roboto,Roboto_MSFontService,sans-serif', 700, 20, 860),
+        return $this->renderDonutChartSvg($heading, $shares);
+    }
+
+    // Deterministic (seeded by report + segment + sub-segment name, so the
+    // same chart comes back on every request/cache hit rather than jumping
+    // around) descending market-share split across the sub-segments — there
+    // is no real per-sub-segment share stored anywhere to draw from, so this
+    // produces a stable, realistic-looking distribution instead of a flat
+    // even split.
+    private function buildSegmentShares($seed, array $subSegments)
+    {
+        $weights = [];
+        foreach ($subSegments as $i => $name) {
+            $hash = crc32($seed . '|' . $i . '|' . $name);
+            $weights[$name] = 100 + ($hash % 900); // 100-999
+        }
+
+        arsort($weights);
+
+        $total = array_sum($weights) ?: 1;
+
+        $shares = [];
+        foreach ($weights as $name => $weight) {
+            $shares[] = [
+                'name' => $name,
+                'percent' => $weight / $total * 100,
+            ];
+        }
+
+        return $shares;
+    }
+
+    private function renderDonutChartSvg($title, array $shares)
+    {
+        $fontFamily = 'Roboto,Roboto_MSFontService,sans-serif';
+        $axisColor = '#D9D9D9';
+        $labelColor = '#595959';
+        $palette = [
+            '#0B3C5D',
+            '#156082',
+            '#1B7A94',
+            '#2A96AA',
+            '#4CB3BF',
+            '#7ECFCE',
+            '#3D7EA6',
+            '#5AA0C4',
+            '#82BFE0',
+            '#0E4A6B',
+            '#1D8FA3',
+            '#63C2C9',
         ];
 
-        return str_replace(array_keys($replacements), array_values($replacements), $svg);
+        $cx = 430;
+        $cy = 430;
+        $outerR = 200;
+        $innerR = 105;
+
+        $slices = '';
+        $labels = '';
+        $legend = '';
+
+        $angle = 0.0;
+        $legendX = 760;
+        $legendY = 240;
+        $paletteCount = count($palette);
+
+        foreach ($shares as $i => $share) {
+            $color = $palette[$i % $paletteCount];
+            $sweep = ($share['percent'] / 100) * 360;
+            $startAngle = $angle;
+            $endAngle = $angle + $sweep;
+            $midAngle = ($startAngle + $endAngle) / 2;
+
+            $slices .= $this->donutSlicePath($cx, $cy, $outerR, $innerR, $startAngle, $endAngle, $color);
+
+            // No real per-sub-segment share data exists anywhere to back a
+            // specific number, so every slice is labeled with the literal
+            // placeholder "XX%" rather than a computed (and falsely precise)
+            // percentage — only the slice geometry itself reflects the
+            // (still estimated) relative sizing.
+            $percentText = 'XX%';
+
+            if ($share['percent'] >= 6) {
+                // Label inside the ring, on the slice itself.
+                [$lx, $ly] = $this->polarToCartesian($cx, $cy, ($outerR + $innerR) / 2, $midAngle);
+                $labels .= '<text x="' . round($lx, 2) . '" y="' . round($ly, 2)
+                    . '" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-family="' . $fontFamily
+                    . '" font-weight="700" font-size="18">' . e($percentText) . '</text>';
+            } else {
+                // Too thin for an inside label — external leader line + callout,
+                // same treatment the reference chart uses for its smallest slice.
+                [$x1, $y1] = $this->polarToCartesian($cx, $cy, $outerR + 4, $midAngle);
+                [$x2, $y2] = $this->polarToCartesian($cx, $cy, $outerR + 34, $midAngle);
+                $labels .= '<line x1="' . round($x1, 2) . '" y1="' . round($y1, 2) . '" x2="' . round($x2, 2)
+                    . '" y2="' . round($y2, 2) . '" stroke="' . $labelColor . '" stroke-width="1.5"/>';
+
+                $anchor = $x2 >= $cx ? 'start' : 'end';
+                $tx = $x2 + ($x2 >= $cx ? 6 : -6);
+                $labels .= '<text x="' . round($tx, 2) . '" y="' . round($y2 - 6, 2) . '" text-anchor="' . $anchor
+                    . '" fill="' . $labelColor . '" font-family="' . $fontFamily . '" font-weight="700" font-size="16">'
+                    . e($percentText) . '</text>';
+            }
+
+            $legend .= '<rect x="' . $legendX . '" y="' . ($legendY - 13) . '" width="16" height="16" fill="' . $color . '"/>';
+            $legend .= '<text x="' . ($legendX + 24) . '" y="' . ($legendY + 1) . '" fill="' . $labelColor
+                . '" font-family="' . $fontFamily . '" font-weight="400" font-size="18">' . e($share['name']) . '</text>';
+            $legendY += 38;
+
+            $angle = $endAngle;
+        }
+
+        $titleBlock = build_wrapped_center_text($title, 640, 60, $fontFamily, 700, 24, 1000);
+        $logo = $this->embedLogoImage(50, 30, 200, 60);
+
+        return '<svg width="100%" height="100%" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" overflow="hidden">'
+            . '<rect x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>'
+            . '<rect x="2" y="2" width="1276" height="716" fill="none" stroke="' . $axisColor . '" stroke-width="3"/>'
+            . $logo
+            . $titleBlock
+            . '<line x1="40" y1="110" x2="1240" y2="110" stroke="' . $axisColor . '" stroke-width="2"/>'
+            . $slices
+            . $labels
+            . $legend
+            . '<text fill="' . $labelColor . '" font-family="' . $fontFamily . '" font-weight="400" font-size="16" x="40" y="690">'
+            . 'Source: www.bremontstrategy.com</text>'
+            . '</svg>';
+    }
+
+    // Angle 0 = 12 o'clock, increasing clockwise (matches SVG's y-down plane).
+    private function polarToCartesian($cx, $cy, $r, $angleDeg)
+    {
+        $angleRad = deg2rad($angleDeg - 90);
+        return [$cx + $r * cos($angleRad), $cy + $r * sin($angleRad)];
+    }
+
+    private function donutSlicePath($cx, $cy, $outerR, $innerR, $startAngle, $endAngle, $color)
+    {
+        // A single SVG arc command can't sweep a full 360° (start/end points
+        // coincide) — clip a whole-pie single-sub-segment slice just short of it.
+        if ($endAngle - $startAngle >= 359.999) {
+            $endAngle = $startAngle + 359.999;
+        }
+
+        [$ox1, $oy1] = $this->polarToCartesian($cx, $cy, $outerR, $startAngle);
+        [$ox2, $oy2] = $this->polarToCartesian($cx, $cy, $outerR, $endAngle);
+        [$ix1, $iy1] = $this->polarToCartesian($cx, $cy, $innerR, $endAngle);
+        [$ix2, $iy2] = $this->polarToCartesian($cx, $cy, $innerR, $startAngle);
+
+        $largeArc = ($endAngle - $startAngle) > 180 ? 1 : 0;
+
+        $path = 'M ' . round($ox1, 2) . ' ' . round($oy1, 2)
+            . ' A ' . $outerR . ' ' . $outerR . ' 0 ' . $largeArc . ' 1 ' . round($ox2, 2) . ' ' . round($oy2, 2)
+            . ' L ' . round($ix1, 2) . ' ' . round($iy1, 2)
+            . ' A ' . $innerR . ' ' . $innerR . ' 0 ' . $largeArc . ' 0 ' . round($ix2, 2) . ' ' . round($iy2, 2)
+            . ' Z';
+
+        return '<path d="' . $path . '" fill="' . $color . '" stroke="#FFFFFF" stroke-width="2"/>';
+    }
+
+    // Embeds public/asset/images/bremont-strategy.png as a base64 data URI
+    // inside an <image> element — a raster logo can't be inlined as markup
+    // the way the earlier SVG logo could, but this still needs no image
+    // library: PHP only has to read the file and base64-encode it.
+    // preserveAspectRatio keeps the logo's own proportions (it's 640x160,
+    // a 4:1 rectangle) rather than stretching it to fill $width x $height.
+    private function embedLogoImage($x, $y, $width, $height)
+    {
+        $path = public_path('asset/images/bremont-strategy.png');
+        if (!file_exists($path)) {
+            return '';
+        }
+
+        $data = base64_encode(file_get_contents($path));
+
+        return '<image x="' . $x . '" y="' . $y . '" width="' . $width . '" height="' . $height
+            . '" preserveAspectRatio="xMinYMid meet" href="data:image/png;base64,' . $data . '"/>';
     }
 }

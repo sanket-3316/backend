@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportKeywordController;
 use App\Http\Controllers\ReportPriceController;
@@ -20,6 +21,8 @@ Route::middleware(['auth.check'])->group(function () {
     Route::post('/upload-image', [DashboardController::class, 'upload_editor_image']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard/report-stats', [DashboardController::class, 'reportStats']);
+    Route::get('/dashboard/lead-stats', [DashboardController::class, 'leadStats']);
     Route::get('/logout', [AuthController::class, 'logout']);
 
     Route::prefix('users')->middleware(['admin.check'])->group(function () {
@@ -28,6 +31,11 @@ Route::middleware(['auth.check'])->group(function () {
         Route::post('/update/{id}', [UserController::class, 'update']);
         Route::post('/delete', [UserController::class, 'delete']);
         Route::get('/list', [UserController::class, 'ajaxList']);
+    });
+
+    Route::prefix('logs')->middleware(['admin.check'])->group(function () {
+        Route::get('/', [LogController::class, 'index']);
+        Route::get('/list', [LogController::class, 'ajaxList']);
     });
     // category
     Route::prefix('category')->group(function () {

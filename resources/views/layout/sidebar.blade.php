@@ -65,11 +65,15 @@
 
     </div>
 
-    <!-- USER DASHBOARD — admin only (role 1: Super Admin, role 2: Admin) -->
+    <!-- USER DASHBOARD / LOGIN LOGS — admin only (role 1: Super Admin, role 2: Admin) -->
     @if(in_array(session('user')->role ?? 0, [1, 2]))
     <a href="{{ url('/users/dashboard') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
         <i class="fa-solid fa-users-gear"></i>
         <span>User Dashboard</span>
+    </a>
+    <a href="{{ url('/logs') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>Login Logs</span>
     </a>
     @endif
 

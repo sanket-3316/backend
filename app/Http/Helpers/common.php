@@ -819,7 +819,6 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     A single 2-column HTML <table> (header <th>Attributes</th><th>Details</th>) with one row per attribute, in this order:
                     - Report Title: \"{$keyword} Market Research Report {$forecast_end_year}\"
                     - One row PER segmentation category above, using its exact name as the attribute (e.g. row label = the category name from SEGMENTS), value = comma-separated list of its exact sub-segment names
-                    - Regions Covered: North America, Europe, Asia Pacific, Latin America, Middle East & Africa
                     - Countries Covered: realistic countries grouped by the regions above (e.g. North America (United States, Canada), Europe (Germany, France, UK, Italy, Spain, Rest of Europe), etc.)
                     - Base Year: {$base_year}
                     - Historic Data: {$report_year['historic_period']}

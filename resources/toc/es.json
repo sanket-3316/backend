@@ -1,0 +1,162 @@
+{
+    "meta": {
+        "market_size_line": "Tamaño del Mercado, Valor (USD Mn) y Volumen (Unidades)",
+        "trend_line": "Tendencias Clave del Mercado y Oportunidades de Crecimiento",
+        "share_line": "Análisis de Cuota de Mercado (%), [[year_range]]",
+        "yoy_line": "Tasa de Crecimiento Anual (YoY)",
+        "attractiveness_line": "Atractivo del Mercado",
+        "investment_line": "Riesgos Globales de Inversión y Comercio",
+        "pricing_line": "Análisis de Precios, [[year_range]]",
+        "margin_line": "Margen Operativo\/Beneficios, [[year_range]]"
+    },
+    "chapter_1": {
+        "title": "Metodología de Investigación"
+    },
+    "chapter_2": {
+        "title": "Estructura del Mercado"
+    },
+    "chapter_3": {
+        "title": "Resumen Ejecutivo"
+    },
+    "chapter_4": {
+        "title": "Visión General del Mercado de [[market_name]]",
+        "sections": [
+            {
+                "title": "Introducción",
+                "children": [
+                    "Instantánea del Mercado",
+                    "Supuestos, Inclusiones y Exclusiones",
+                    "Avances Tecnológicos y Análisis de Patentes",
+                    "Estudios de Caso",
+                    "Estrategias de Entrada y Lanzamiento al Mercado",
+                    "Factores Macroeconómicos que Impactan el Crecimiento del Mercado"
+                ]
+            },
+            {
+                "title": "Dinámica del Mercado de [[market_name]]",
+                "children": [
+                    "Impulsores del Mercado",
+                    "Restricciones del Mercado",
+                    "Oportunidades del Mercado"
+                ]
+            },
+            {
+                "title": "Mercado de [[market_name]] - Análisis de la Cadena de Suministro",
+                "children": [
+                    "Proveedor Clave de Materias Primas\/Componentes",
+                    "Fabricantes Clave",
+                    "Distribuidores Clave",
+                    "Consumidores Clave"
+                ]
+            },
+            {
+                "title": "Fuerzas Clave que Moldean el Mercado de [[market_name]]",
+                "children": [
+                    "Poder de Negociación de los Proveedores",
+                    "Poder de Negociación de los Compradores",
+                    "Amenaza de Sustitución",
+                    "Amenaza de Nuevos Entrantes",
+                    "Rivalidad Competitiva"
+                ]
+            }
+        ]
+    },
+    "segment_chapter": {
+        "title": "Mercado Global de [[market_name]], Por [[segment_label]]"
+    },
+    "segment_labels": {
+        "By component": "Componente",
+        "By deployment": "Modo de Despliegue",
+        "By application": "Aplicación",
+        "By industry": "Vertical de la Industria",
+        "By region": "Región",
+        "By product": "Tipo de Producto",
+        "By product type": "Tipo de Producto",
+        "By type": "Tipo",
+        "By end user": "Usuario Final",
+        "By end-user": "Usuario Final",
+        "By technology": "Tecnología",
+        "By solution": "Solución",
+        "By offering": "Oferta",
+        "By service": "Servicio",
+        "By enterprise size": "Tamaño de la Empresa"
+    },
+    "region_chapter": {
+        "title": "Mercado Global de [[market_name]], Por Región",
+        "sub_chapter_title": "Mercado Global de [[market_name]], Por [[region_name]]",
+        "regions": [
+            {
+                "name": "América del Norte",
+                "countries": [
+                    "EE.UU.",
+                    "Canadá"
+                ]
+            },
+            {
+                "name": "Europa",
+                "countries": [
+                    "Alemania",
+                    "Francia",
+                    "Reino Unido",
+                    "España",
+                    "Italia",
+                    "Suiza",
+                    "Rusia",
+                    "Polonia",
+                    "Resto de Europa"
+                ]
+            },
+            {
+                "name": "Asia Pacífico",
+                "countries": [
+                    "China",
+                    "Japón",
+                    "Corea del Sur",
+                    "India",
+                    "Australia",
+                    "Sudeste Asiático",
+                    "Resto de APAC"
+                ]
+            },
+            {
+                "name": "América Latina",
+                "countries": [
+                    "Brasil",
+                    "México",
+                    "Argentina",
+                    "Resto de LATAM"
+                ]
+            },
+            {
+                "name": "Oriente Medio y África",
+                "countries": [
+                    "Arabia Saudita",
+                    "EAU",
+                    "Sudáfrica",
+                    "Resto de MEA"
+                ]
+            }
+        ]
+    },
+    "competitive_chapter": {
+        "title": "Análisis Competitivo",
+        "landscape_title": "Panorama de la Competencia, Jugadores Clave",
+        "landscape_children": [
+            "Análisis de Cuota de Mercado Global (%) de Jugadores Clave en [[market_name]], en Valor (USD Mn) y Volumen (Unidades)",
+            "Visión General de la Empresa",
+            "Finanzas de la Empresa",
+            "Noticias y Desarrollos",
+            "Iniciativas Estratégicas"
+        ],
+        "company_profiles_title": "Perfiles de Empresas"
+    },
+    "methodology": {
+        "title": "Metodología de Investigación",
+        "paragraphs": [
+            "Para proporcionarle una comprensión integral de cómo cuantificamos su oportunidad de mercado, utilizamos una metodología multifásica diseñada para minimizar el riesgo y maximizar la claridad estratégica. Comenzamos el proceso estableciendo un marco conceptual claro, a menudo referido como el modelo TAM-SAM-SOM. Al comenzar con el Mercado Total Disponible, observamos la demanda global absoluta para su categoría. Luego refinamos esto en el Mercado Disponible Servible para tener en cuenta su alcance geográfico y tecnológico específico, y finalmente, identificamos el Mercado Servible Obtenible. Esto asegura que las cifras finales que presentamos no son solo \"métricas de vanidad\" teóricas, sino que representan un objetivo de ingresos realista y capturable para su negocio.",
+            "Nuestro proceso de recopilación de datos se basa en un principio riguroso llamado triangulación, donde cruzamos múltiples flujos de datos independientes para garantizar la precisión. Iniciamos esto con una investigación secundaria profunda, sintetizando inteligencia de alto valor de archivos financieros auditados, bases de datos comerciales gubernamentales y revistas especializadas de la industria. Esta fase de \"investigación de escritorio\" proporciona una base macroeconómica e identifica trayectorias de crecimiento histórico. Sin embargo, debido a que los datos secundarios a veces pueden retrasarse respecto a los cambios en tiempo real, complementamos esto con investigación primaria dirigida. Esto implica un compromiso directo con Líderes de Opinión Clave (KOLs) y encuestas cuantitativas estructuradas para captar el pulso actual del mercado y la intención de compra emergente.",
+            "Para asegurar la integridad de nuestras estimaciones, empleamos un enfoque de modelado dual, calculando el tamaño del mercado tanto desde el \"De Arriba Hacia Abajo\" como desde el \"De Abajo Hacia Arriba\". El análisis De Arriba Hacia Abajo proporciona una valiosa verificación de cordura contra las tendencias económicas más amplias, pero damos más peso a nuestro modelado De Abajo Hacia Arriba. Al tomar datos granulares, como el valor promedio de transacción y el número real de puntos de contacto potenciales con clientes, y escalarlos hacia arriba, construimos un modelo altamente defendible basado en la realidad operativa. Este método de verificación dual nos permite identificar cualquier discrepancia temprano, asegurando que los datos resultantes sean lo suficientemente robustos como para soportar el escrutinio de las partes interesadas o inversores.",
+            "Finalmente, reconocemos que una cifra estática del tamaño del mercado es solo una instantánea en el tiempo. Para proporcionarle una hoja de ruta para el futuro, integramos análisis de tendencias y pronósticos de Tasa de Crecimiento Anual Compuesta (CAGR) en nuestro informe final. Analizamos los impulsores subyacentes, como cambios regulatorios, disrupciones tecnológicas o cambios en los comportamientos del consumidor, para predecir cómo evolucionará el mercado en los próximos tres a cinco años. Este mecanismo de seguimiento continuo transforma un simple número en una herramienta estratégica dinámica, permitiéndole monitorear su cuota de mercado en tiempo real y ajustar sus recursos a medida que surgen nuevas oportunidades."
+        ]
+    }
+}

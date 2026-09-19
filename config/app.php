@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | This app is the API backend (APP_URL, e.g. api.bremontstrategy.com) —
+    | the public site reports actually render on is a separate frontend
+    | domain. Any "view this report live" link (admin dashboard, internal
+    | linking cron, etc.) must be built from this, never from url()/APP_URL.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'https://www.bremontstrategy.com'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

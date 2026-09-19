@@ -76,12 +76,21 @@ function report_random_stats()
 }
 
 if (!function_exists('build_public_report_url')) {
-    // Same URL pattern RunReportInternalLinking already builds report links
-    // with — kept as one helper so the admin dashboard's "view report" links
-    // and the internal-linking cron never drift apart.
+    // Single source of truth for "view this report on the live site" links —
+    // used by the admin dashboard and the internal-linking cron, so they
+    // never drift apart. Built from config('app.frontend_url'), NOT url()/
+    // APP_URL — this app IS the API backend (api.bremontstrategy.com), a
+    // different domain from the public frontend the report actually renders
+    // on (www.bremontstrategy.com). English has no locale prefix; every
+    // other language is prefixed with its code.
     function build_public_report_url($languageCode, $slug)
     {
-        return url('/' . $languageCode . '/report/' . $slug);
+        $base = rtrim(config('app.frontend_url'), '/');
+        $isEnglish = strtolower((string) $languageCode) === 'en';
+
+        return $isEnglish
+            ? $base . '/report/' . $slug
+            : $base . '/' . $languageCode . '/report/' . $slug;
     }
 }
 

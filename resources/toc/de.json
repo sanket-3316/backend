@@ -1,0 +1,162 @@
+{
+    "meta": {
+        "market_size_line": "Marktgröße, Wert (USD Mio.) & Volumen (Einheiten)",
+        "trend_line": "Wichtige Markttrends & Wachstumschancen",
+        "share_line": "Marktanteilsanalyse (%), [[year_range]]",
+        "yoy_line": "Jährliche Wachstumsrate (YoY)",
+        "attractiveness_line": "Marktattraktivität",
+        "investment_line": "Globale Investitions- & Handelsrisiken",
+        "pricing_line": "Preisanalysen, [[year_range]]",
+        "margin_line": "Betriebsmarge\/Gewinne, [[year_range]]"
+    },
+    "chapter_1": {
+        "title": "Forschungsmethodik"
+    },
+    "chapter_2": {
+        "title": "Marktstruktur"
+    },
+    "chapter_3": {
+        "title": "Zusammenfassung"
+    },
+    "chapter_4": {
+        "title": "[[market_name]] Marktübersicht",
+        "sections": [
+            {
+                "title": "Einführung",
+                "children": [
+                    "Marktüberblick",
+                    "Annahmen, Ein- & Ausschlüsse",
+                    "Technologische Fortschritte & Patentanalysen",
+                    "Fallstudien",
+                    "Markteintritts- & Einführungsstrategien",
+                    "Makroökonomische Faktoren, die das Marktwachstum beeinflussen"
+                ]
+            },
+            {
+                "title": "[[market_name]] Marktdynamik",
+                "children": [
+                    "Markttreiber",
+                    "Marktbeschränkungen",
+                    "Marktchancen"
+                ]
+            },
+            {
+                "title": "[[market_name]] Markt - Lieferkettenanalyse",
+                "children": [
+                    "Wichtige Rohstoff-\/Komponentenlieferanten",
+                    "Wichtige Hersteller",
+                    "Wichtige Distributoren",
+                    "Wichtige Verbraucher"
+                ]
+            },
+            {
+                "title": "Wichtige Kräfte, die den [[market_name]] Markt beeinflussen",
+                "children": [
+                    "Verhandlungsmacht der Lieferanten",
+                    "Verhandlungsmacht der Käufer",
+                    "Bedrohung durch Ersatzprodukte",
+                    "Bedrohung durch neue Marktteilnehmer",
+                    "Wettbewerbsrivalität"
+                ]
+            }
+        ]
+    },
+    "segment_chapter": {
+        "title": "Globaler [[market_name]] Markt, nach [[segment_label]]"
+    },
+    "segment_labels": {
+        "By component": "Komponente",
+        "By deployment": "Bereitstellungsmodus",
+        "By application": "Anwendung",
+        "By industry": "Branchenvertikale",
+        "By region": "Region",
+        "By product": "Produkttyp",
+        "By product type": "Produkttyp",
+        "By type": "Typ",
+        "By end user": "Endbenutzer",
+        "By end-user": "Endbenutzer",
+        "By technology": "Technologie",
+        "By solution": "Lösung",
+        "By offering": "Angebot",
+        "By service": "Dienstleistung",
+        "By enterprise size": "Unternehmensgröße"
+    },
+    "region_chapter": {
+        "title": "Globaler [[market_name]] Markt, nach Region",
+        "sub_chapter_title": "Globaler [[market_name]] Markt, nach [[region_name]]",
+        "regions": [
+            {
+                "name": "Nordamerika",
+                "countries": [
+                    "USA",
+                    "Kanada"
+                ]
+            },
+            {
+                "name": "Europa",
+                "countries": [
+                    "Deutschland",
+                    "Frankreich",
+                    "Vereinigtes Königreich",
+                    "Spanien",
+                    "Italien",
+                    "Schweiz",
+                    "Russland",
+                    "Polen",
+                    "Rest von Europa"
+                ]
+            },
+            {
+                "name": "Asien-Pazifik",
+                "countries": [
+                    "China",
+                    "Japan",
+                    "Südkorea",
+                    "Indien",
+                    "Australien",
+                    "Südostasien",
+                    "Rest von APAC"
+                ]
+            },
+            {
+                "name": "Lateinamerika",
+                "countries": [
+                    "Brasilien",
+                    "Mexiko",
+                    "Argentinien",
+                    "Rest von LATAM"
+                ]
+            },
+            {
+                "name": "Naher Osten & Afrika",
+                "countries": [
+                    "Saudi-Arabien",
+                    "VAE",
+                    "Südafrika",
+                    "Rest von MEA"
+                ]
+            }
+        ]
+    },
+    "competitive_chapter": {
+        "title": "Wettbewerbsanalyse",
+        "landscape_title": "Wettbewerbslandschaft, Hauptakteure",
+        "landscape_children": [
+            "Globale Marktanteilsanalyse (%) der Hauptakteure in [[market_name]], in Wert (USD Mio.) & Volumen (Einheiten)",
+            "Unternehmensübersicht",
+            "Unternehmensfinanzen",
+            "Nachrichten & Entwicklungen",
+            "Strategische Initiativen"
+        ],
+        "company_profiles_title": "Unternehmensprofile"
+    },
+    "methodology": {
+        "title": "Forschungsmethodik",
+        "paragraphs": [
+            "Um Ihnen ein umfassendes Verständnis dafür zu vermitteln, wie wir Ihre Marktchancen quantifizieren, verwenden wir eine mehrphasige Methodik, die darauf abzielt, Risiken zu minimieren und strategische Klarheit zu maximieren. Wir beginnen den Prozess mit der Etablierung eines klaren konzeptionellen Rahmens, oft als TAM-SAM-SOM-Modell bezeichnet. Indem wir mit dem gesamten adressierbaren Markt beginnen, betrachten wir die absolute globale Nachfrage für Ihre Kategorie. Wir verfeinern dies dann in den bedienbaren adressierbaren Markt, um Ihre spezifische geografische und technologische Reichweite zu berücksichtigen, und schließlich bestimmen wir den bedienbaren erreichbaren Markt. Dies stellt sicher, dass die endgültigen Zahlen, die wir präsentieren, nicht nur theoretische \"Eitelkeitsmetriken\" sind, sondern ein realistisches, erfassbares Umsatzziel für Ihr Unternehmen darstellen.",
+            "Unser Datenerhebungsprozess basiert auf einem rigorosen Prinzip namens Triangulation, bei dem wir mehrere unabhängige Datenströme kreuzverweisen, um die Genauigkeit zu gewährleisten. Wir beginnen dies mit tiefgehender Sekundärforschung, bei der wir wertvolle Informationen aus geprüften Finanzberichten, staatlichen Handelsdatenbanken und spezialisierten Branchenzeitschriften synthetisieren. Diese \"Schreibtischforschung\"-Phase bietet eine makroökonomische Basislinie und identifiziert historische Wachstumspfade. Da jedoch Sekundärdaten manchmal hinter Echtzeitverschiebungen zurückbleiben können, ergänzen wir dies mit gezielter Primärforschung. Dies beinhaltet die direkte Zusammenarbeit mit wichtigen Meinungsführern (KOLs) und strukturierten quantitativen Umfragen, um den aktuellen Puls des Marktes und aufkommende Käuferabsichten zu erfassen.",
+            "Um die Integrität unserer Schätzungen zu gewährleisten, verwenden wir einen doppelten Modellierungsansatz, bei dem wir die Marktgröße sowohl von oben nach unten als auch von unten nach oben berechnen. Die Top-Down-Analyse bietet eine wertvolle Plausibilitätsprüfung gegenüber breiteren Wirtschaftstrends, aber wir legen das größte Gewicht auf unsere Bottom-Up-Modellierung. Indem wir granulare Daten wie den durchschnittlichen Transaktionswert und die tatsächliche Anzahl potenzieller Kundenkontaktpunkte nehmen und sie nach oben skalieren, erstellen wir ein hoch verteidigbares Modell, das in der operativen Realität verankert ist. Diese Methode der doppelten Verifizierung ermöglicht es uns, Diskrepanzen frühzeitig zu identifizieren und sicherzustellen, dass die resultierenden Daten robust genug sind, um der Prüfung durch Stakeholder oder Investoren standzuhalten.",
+            "Schließlich erkennen wir an, dass eine statische Marktgrößenfigur nur eine Momentaufnahme in der Zeit ist. Um Ihnen eine Roadmap für die Zukunft zu bieten, integrieren wir Trendanalysen und Prognosen der durchschnittlichen jährlichen Wachstumsrate (CAGR) in unsere endgültigen Berichte. Wir analysieren die zugrunde liegenden Treiber, wie regulatorische Veränderungen, technologische Störungen oder sich ändernde Verbraucherverhalten, um vorherzusagen, wie sich der Markt in den nächsten drei bis fünf Jahren entwickeln wird. Dieser fortlaufende Tracking-Mechanismus verwandelt eine einfache Zahl in ein dynamisches strategisches Werkzeug, das es Ihnen ermöglicht, Ihren Marktanteil in Echtzeit zu überwachen und Ihre Ressourcen zu verlagern, wenn neue Chancen entstehen."
+        ]
+    }
+}

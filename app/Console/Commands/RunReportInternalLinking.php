@@ -34,7 +34,7 @@ class RunReportInternalLinking extends Command
             $pool = $group->map(fn($row) => [
                 'report_id' => $row->report_id,
                 'keyword' => $row->keyword,
-                'url' => url("/{$languageCode}/report/{$row->report_url}"),
+                'url' => build_public_report_url($languageCode, $row->report_url),
             ]);
 
             foreach ($group as $row) {

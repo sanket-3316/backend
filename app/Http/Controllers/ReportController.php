@@ -775,7 +775,7 @@ class ReportController extends Controller
                 ->get()
                 ->mapWithKeys(function ($item) use ($slug) {
                     return [
-                        $item->code => url("/{$item->code}/report/{$slug}")
+                        $item->code => build_public_report_url($item->code, $slug)
                     ];
                 });
 

@@ -501,11 +501,14 @@ if (!function_exists('inject_report_charts_into_description')) {
             $html = preg_replace_callback('/<h2\b[^>]*>(.*?)<\/h2>/is', function ($match) use ($segmentKeys, $baseUrl) {
                 $text = trim(strip_tags($match[1]));
 
-                foreach ($segmentKeys as $segmentKey) {
+                foreach ($segmentKeys as $key => $segmentKey) {
                     if (strcasecmp(trim($segmentKey) . ' Analysis', $text) === 0) {
                         $imgSlug = Str::slug($segmentKey);
-                        $img = '<img src="' . $baseUrl . '/' . $imgSlug . '.webp" alt="' . e($segmentKey) . '" loading="lazy" />';
+                        $img = '<img src="' . $baseUrl . '/' . $imgSlug . '.webp" alt="' . e($segmentKey) . '" loading="lazy" style="margin-bottom: 10px;"/>';
 
+                        if ($key >= 2) {
+                            continue;
+                        }
                         return $match[0] . $img;
                     }
                 }
@@ -806,7 +809,7 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     ---------------------------------------------------------
 
                     2. <h2>{$keyword} Market Key Takeaways</h2>
-                    <ul> with 4-5 <li> bullets. Each bullet is a full, data-rich sentence (not a fragment) using real numbers derived from the market data and segmentation above — market size/CAGR, a leading segment's share and growth rate, the leading region's share, and a demand driver. No generic bullets.
+                    <ul> with 4-5 <li> bullets. Each bullet is a full, data-rich sentence (not a fragment) using real numbers derived from the market data and segmentation above — market size/CAGR, a leading segment's share and growth rate, the leading region's share, and a demand driver. No generic bullets. then close </ul> tag.
 
                     ---------------------------------------------------------
 
@@ -825,7 +828,7 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     ---------------------------------------------------------
 
                     5. <h2>{$keyword} Market Report Scope</h2>
-                    A single 2-column HTML <table> (header <th>Attributes</th><th>Details</th>) with one row per attribute, in this order:
+                    A single 2-column HTML <table class=\"report-scope\"> (header <th>Attributes</th><th>Details</th>) with one row per attribute, in this order:
                     - Report Title: \"{$keyword} Market Research Report {$forecast_end_year}\"
                     - One row PER segmentation category above, using its exact name as the attribute (e.g. row label = the category name from SEGMENTS), value = comma-separated list of its exact sub-segment names
                     - Countries Covered: realistic countries grouped by the regions above (e.g. North America (United States, Canada), Europe (Germany, France, UK, Italy, Spain, Rest of Europe), etc.)

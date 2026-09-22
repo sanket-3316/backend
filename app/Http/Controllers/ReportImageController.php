@@ -351,18 +351,22 @@ class ReportImageController extends Controller
             '#63C2C9',
         ];
 
-        $cx = 430;
-        $cy = 430;
-        $outerR = 200;
-        $innerR = 105;
+        // Canvas is smaller than the bar chart's (750x500 vs 1280x720) — the
+        // donut/legend/logo geometry below is a fresh layout for that size,
+        // not the old 1280x720 numbers scaled down, so nothing ends up
+        // cramped or floating in leftover blank space.
+        $cx = 230;
+        $cy = 280;
+        $outerR = 130;
+        $innerR = 68;
 
         $slices = '';
         $labels = '';
         $legend = '';
 
         $angle = 0.0;
-        $legendX = 760;
-        $legendY = 240;
+        $legendX = 420;
+        $legendY = 130;
         $paletteCount = count($palette);
 
         foreach ($shares as $i => $share) {
@@ -386,43 +390,43 @@ class ReportImageController extends Controller
                 [$lx, $ly] = $this->polarToCartesian($cx, $cy, ($outerR + $innerR) / 2, $midAngle);
                 $labels .= '<text x="' . round($lx, 2) . '" y="' . round($ly, 2)
                     . '" text-anchor="middle" dominant-baseline="middle" fill="#FFFFFF" font-family="' . $fontFamily
-                    . '" font-weight="700" font-size="18">' . e($percentText) . '</text>';
+                    . '" font-weight="700" font-size="13">' . e($percentText) . '</text>';
             } else {
                 // Too thin for an inside label — external leader line + callout,
                 // same treatment the reference chart uses for its smallest slice.
-                [$x1, $y1] = $this->polarToCartesian($cx, $cy, $outerR + 4, $midAngle);
-                [$x2, $y2] = $this->polarToCartesian($cx, $cy, $outerR + 34, $midAngle);
+                [$x1, $y1] = $this->polarToCartesian($cx, $cy, $outerR + 3, $midAngle);
+                [$x2, $y2] = $this->polarToCartesian($cx, $cy, $outerR + 22, $midAngle);
                 $labels .= '<line x1="' . round($x1, 2) . '" y1="' . round($y1, 2) . '" x2="' . round($x2, 2)
-                    . '" y2="' . round($y2, 2) . '" stroke="' . $labelColor . '" stroke-width="1.5"/>';
+                    . '" y2="' . round($y2, 2) . '" stroke="' . $labelColor . '" stroke-width="1.2"/>';
 
                 $anchor = $x2 >= $cx ? 'start' : 'end';
-                $tx = $x2 + ($x2 >= $cx ? 6 : -6);
-                $labels .= '<text x="' . round($tx, 2) . '" y="' . round($y2 - 6, 2) . '" text-anchor="' . $anchor
-                    . '" fill="' . $labelColor . '" font-family="' . $fontFamily . '" font-weight="700" font-size="16">'
+                $tx = $x2 + ($x2 >= $cx ? 5 : -5);
+                $labels .= '<text x="' . round($tx, 2) . '" y="' . round($y2 - 4, 2) . '" text-anchor="' . $anchor
+                    . '" fill="' . $labelColor . '" font-family="' . $fontFamily . '" font-weight="700" font-size="12">'
                     . e($percentText) . '</text>';
             }
 
-            $legend .= '<rect x="' . $legendX . '" y="' . ($legendY - 13) . '" width="16" height="16" fill="' . $color . '"/>';
-            $legend .= '<text x="' . ($legendX + 24) . '" y="' . ($legendY + 1) . '" fill="' . $labelColor
-                . '" font-family="' . $fontFamily . '" font-weight="400" font-size="18">' . e($share['name']) . '</text>';
-            $legendY += 38;
+            $legend .= '<rect x="' . $legendX . '" y="' . ($legendY - 10) . '" width="12" height="12" fill="' . $color . '"/>';
+            $legend .= '<text x="' . ($legendX + 18) . '" y="' . $legendY . '" fill="' . $labelColor
+                . '" font-family="' . $fontFamily . '" font-weight="400" font-size="13">' . e($share['name']) . '</text>';
+            $legendY += 28;
 
             $angle = $endAngle;
         }
 
-        $titleBlock = build_wrapped_center_text($title, 640, 60, $fontFamily, 700, 24, 1000);
-        $logo = $this->embedLogoImage(50, 30, 200, 60);
+        $titleBlock = build_wrapped_center_text($title, 375, 40, $fontFamily, 700, 16, 560);
+        $logo = $this->embedLogoImage(24, 16, 120, 36);
 
-        return '<svg width="100%" height="100%" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" overflow="hidden">'
-            . '<rect x="0" y="0" width="1280" height="720" fill="#FFFFFF"/>'
-            . '<rect x="2" y="2" width="1276" height="716" fill="none" stroke="' . $axisColor . '" stroke-width="3"/>'
+        return '<svg width="100%" height="100%" viewBox="0 0 750 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" overflow="hidden">'
+            . '<rect x="0" y="0" width="750" height="500" fill="#FFFFFF"/>'
+            . '<rect x="2" y="2" width="746" height="496" fill="none" stroke="' . $axisColor . '" stroke-width="2"/>'
             . $logo
             . $titleBlock
-            . '<line x1="40" y1="110" x2="1240" y2="110" stroke="' . $axisColor . '" stroke-width="2"/>'
+            . '<line x1="24" y1="62" x2="726" y2="62" stroke="' . $axisColor . '" stroke-width="1.5"/>'
             . $slices
             . $labels
             . $legend
-            . '<text fill="' . $labelColor . '" font-family="' . $fontFamily . '" font-weight="400" font-size="16" x="40" y="690">'
+            . '<text fill="' . $labelColor . '" font-family="' . $fontFamily . '" font-weight="400" font-size="11" x="24" y="482">'
             . 'Source: www.bremontstrategy.com</text>'
             . '</svg>';
     }

@@ -204,7 +204,7 @@ function get_report_segmentation_prompt()
                                 \"By Deployment\": [],
                                 \"By Application\": [],
                                 \"By Industry\": [],
-                                ... same other segments 
+                                ... same other segments like end user
                                 \"By region\": []
 
                             },

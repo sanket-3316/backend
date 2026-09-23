@@ -271,6 +271,7 @@ function get_report_market_size_data_prompt($years = null)
                 - Use realistic industry estimates
                 - CAGR must be logical based on market growth between {$years['base_year']} and {$years['forecast_end_year']}
                 - base_year_market_size and forecast_market_size MUST be formatted strings like \"\$1.5 Billion\" or \"\$850 Million\" — always include the dollar sign and the word Million or Billion, never a bare number
+                - make sure above provided market size ($1.5 Billion and $850 Million) is example , so don't use this market size.
                 - cagr_percent must be a number (not a string)
                 - Do not add explanations
                 - Do not return anything except JSON"
@@ -847,8 +848,9 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
 
                     Then, for EACH segment category in SEGMENTS above, in the same order, output a separate block:
                     <h2>{Segment Category Name} Analysis</h2> — the heading text MUST be exactly the category name followed by the single word \" Analysis\" and nothing else (no \"Market\", no extra words). Category names to use, in order: {$segmentHeadingList}.
-                    Then an HTML <table> (header <th>Segment</th><th>Market Share</th><th>Growth Rate</th><th>Key Insight</th>) with exactly one row per sub-segment name in that category (use the exact sub-segment names, realistic share %/growth rate that sum sensibly, short key insight phrase).
-                    Then 2-3 paragraphs (80-120 words each) analyzing the sub-segments in that category — their relative demand drivers, use cases, and why the leading one leads.
+                    
+                    Then 2-3 paragraphs (100-150 words each) analyzing the sub-segments in that category — their relative demand drivers, use cases, and why the leading one leads.
+                    - Make sure each para fully detailed and large.
 
                     ---------------------------------------------------------
 

@@ -849,9 +849,9 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     Then, for EACH segment category in SEGMENTS above, in the same order, output a separate block:
                     <h2>{Segment Category Name} Analysis</h2> — the heading text MUST be exactly the category name followed by the single word \" Analysis\" and nothing else (no \"Market\", no extra words). Category names to use, in order: {$segmentHeadingList}.
                     
-                    Then 2-3 paragraphs (100-150 words each) analyzing the sub-segments in that category — their relative demand drivers, use cases, and why the leading one leads.
+                    Then 3-4 paragraphs (100-150 words each) analyzing the sub-segments in that category — their relative demand drivers, use cases, and why the leading one leads.
                     - Make sure each para fully detailed and large.
-
+                    - Make sure each <h2> {Segment Category Name} add first latter capital.
                     ---------------------------------------------------------
 
                     7. <h2>{$keyword} Market Regional Outlook</h2>

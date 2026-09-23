@@ -200,10 +200,10 @@ function get_report_segmentation_prompt()
 
                         {
                             \"segments\": {
-                                \"By component\": [],
-                                \"By deployment\": [],
-                                \"By application\": [],
-                                \"By industry\": [],
+                                \"By Component\": [],
+                                \"By Deployment\": [],
+                                \"By Application\": [],
+                                \"By Industry\": [],
                                 \"By region\": []
 
                             },
@@ -214,6 +214,9 @@ function get_report_segmentation_prompt()
                         - Use realistic market research categories
                         - Minimum 4-6 items per segment
                         - Keep names professional and industry-standard
+                        - Always add first latter capital each segment name.
+                        - Add [[keyword]] market segments.
+
                         - Do not return anything except JSON \n\n
 
                         Example of a H1 long title is: Generative AI (Gen AI) Market Segments - by Component (Software, Hardware, Services), Application (Healthcare, Finance, Media and Entertainment, Retail, Manufacturing, IT and Telecommunications, and Others), Deployment Mode (On-Premises, Cloud), Enterprise Size (Small and Medium Enterprises, Large Enterprises), End-User (BFSI, Healthcare, Retail and E-commerce, Media and Entertainment, Manufacturing, IT and Telecommunications, and Others), and Region (Asia Pacific, North America, Latin America, Europe, and Middle East & Africa) - The Market Forecasts are Provided in Terms of Value (USD)\n\n

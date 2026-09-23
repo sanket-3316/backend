@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportKeywordController;
@@ -36,6 +37,15 @@ Route::middleware(['auth.check'])->group(function () {
     Route::prefix('logs')->middleware(['admin.check'])->group(function () {
         Route::get('/', [LogController::class, 'index']);
         Route::get('/list', [LogController::class, 'ajaxList']);
+    });
+
+    Route::prefix('leads')->group(function () {
+        Route::get('/', [LeadController::class, 'index']);
+        Route::get('/list', [LeadController::class, 'ajaxList']);
+        Route::get('/export', [LeadController::class, 'exportCsv']);
+        Route::post('/store', [LeadController::class, 'adminStore']);
+        Route::post('/update/{id}', [LeadController::class, 'update']);
+        Route::post('/delete', [LeadController::class, 'delete']);
     });
     // category
     Route::prefix('category')->group(function () {

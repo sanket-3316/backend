@@ -38,6 +38,12 @@
     </a>
 
     <!-- SIMPLE MENU -->
+    <a href="{{ url('leads') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
+        <i class="fa-solid fa-user-tag"></i>
+        <span>Leads</span>
+    </a>
+
+    <!-- SIMPLE MENU -->
     <a href="{{ url('career') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
         <i class="fa-solid fa-briefcase"></i>
         <span>Careers</span>

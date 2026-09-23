@@ -507,9 +507,9 @@ if (!function_exists('inject_report_charts_into_description')) {
                         $imgSlug = Str::slug($segmentKey);
                         $img = '<img src="' . $baseUrl . '/' . $imgSlug . '.webp" alt="' . e($segmentKey) . '" loading="lazy" style="margin-bottom: 10px;"/>';
 
-                        if ($key >= 2) {
-                            continue;
-                        }
+                        // if ($key >= 2) {
+                        //     continue;
+                        // }
                         return $match[0] . $img;
                     }
                 }

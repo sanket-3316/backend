@@ -16,5 +16,6 @@ class Lead extends Model
         'category_id',
         'language_id',
         'status_id',
+        'is_deleted',
     ];
 }

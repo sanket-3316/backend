@@ -238,16 +238,16 @@ class ReportController extends Controller
         }
     }
 
+    // Moves a report to the recycle bin (soft delete) — not permanent.
     public function destroy($id)
     {
         Report::deleteReport($id);
         return response()->json(['status' => 'deleted']);
     }
 
-    // Hard-deletes many canonical reports at once (checkbox bulk delete in the
-    // dashboard). Each id is a report_id, which via FK cascade already wipes
-    // every reports_info/report_descriptions/report_prices row under it — so
-    // deleting the English report row here removes every language variant too.
+    // Moves many reports to the recycle bin at once (checkbox bulk delete in
+    // the dashboard). Soft delete only — see permanentDestroy()/bulkPermanentDestroy()
+    // for the recycle bin's actual hard-delete action.
     public function bulkDestroy(Request $request)
     {
         $request->validate([
@@ -261,6 +261,62 @@ class ReportController extends Controller
             'status' => true,
             'deleted' => $deleted,
         ]);
+    }
+
+    // ============================================================================
+    //  RECYCLE BIN
+    // ============================================================================
+
+    public function recycleBin()
+    {
+        return view('report.recycle-bin');
+    }
+
+    public function recycleBinList()
+    {
+        $data = Report::getDeletedReports();
+        return response()->json(['data' => $data]);
+    }
+
+    public function restore($id)
+    {
+        Report::restoreReport($id);
+        return response()->json(['status' => true, 'message' => 'Report restored successfully']);
+    }
+
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $restored = Report::bulkRestoreReports($request->ids);
+
+        return response()->json(['status' => true, 'restored' => $restored]);
+    }
+
+    // Hard-deletes many canonical reports at once. Each id is a report_id,
+    // which via FK cascade already wipes every reports_info/report_descriptions/
+    // report_prices row under it — so deleting the English report row here
+    // removes every language variant too. Only ever reached from the recycle
+    // bin, on reports that are already there.
+    public function permanentDestroy($id)
+    {
+        Report::permanentlyDeleteReport($id);
+        return response()->json(['status' => true, 'message' => 'Report permanently deleted']);
+    }
+
+    public function bulkPermanentDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = Report::bulkPermanentlyDeleteReports($request->ids);
+
+        return response()->json(['status' => true, 'deleted' => $deleted]);
     }
 
     // Dashboard "Generate" button: same GPT prompt sequence as GenerateReportJob

@@ -25,6 +25,9 @@
             <a class="hover-bg-primary rounded-1" href="{{ url('/keywords') }}">
                 <i class="fa-solid fa-robot me-2"></i> Keywords
             </a>
+            <a class="hover-bg-primary rounded-1" href="{{ url('/report/recycle-bin') }}">
+                <i class="fa-solid fa-trash-can me-2"></i> Recycle Bin
+            </a>
         </div>
 
         <div class="submenu-popup"></div>
@@ -44,6 +47,12 @@
     </a>
 
     <!-- SIMPLE MENU -->
+    <a href="{{ url('contact-messages') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
+        <i class="fa-solid fa-address-card"></i>
+        <span>Contact Us</span>
+    </a>
+
+    <!-- SIMPLE MENU -->
     <a href="{{ url('career') }}" class="hover-bg-primary rounded-1 d-flex align-items-center">
         <i class="fa-solid fa-briefcase"></i>
         <span>Careers</span>
@@ -59,12 +68,20 @@
         </a>
 
         <div class="submenu">
-            <a class="hover-bg-primary rounded-1" href="#">
+            <a class="hover-bg-primary rounded-1" href="{{ url('/profile') }}">
                 <i class="fa-solid fa-user me-2"></i> Profile
             </a>
             <a class="hover-bg-primary rounded-1" href="{{ url('/report-price') }}">
                 <i class="fa-solid fa-tags me-2"></i> Report Price
             </a>
+            @if(in_array(session('user')->role ?? 0, [1, 2]))
+            <a class="hover-bg-primary rounded-1" href="{{ url('/settings/api-key') }}">
+                <i class="fa-solid fa-key me-2"></i> API Key
+            </a>
+            <a class="hover-bg-primary rounded-1" href="{{ url('/settings/contact-details') }}">
+                <i class="fa-solid fa-address-book me-2"></i> Contact Details
+            </a>
+            @endif
         </div>
 
         <div class="submenu-popup"></div>

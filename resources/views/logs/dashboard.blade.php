@@ -16,12 +16,14 @@
                         @endforeach
                     </select>
                     <button class="btn-custom btn-secondary-gradient" id="clearLogFilterBtn">Clear</button>
+                    <button class="btn-custom btn-warning-gradient" id="bulkDeleteLogsBtn">Delete Selected</button>
                 </div>
             </div>
 
             <table id="logsTable" class="table table-striped align-middle">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="selectAllLogs"></th>
                         <th>User</th>
                         <th>Email</th>
                         <th>Login At</th>
@@ -45,9 +47,17 @@
                     }
                 },
                 order: [
-                    [2, 'desc']
+                    [3, 'desc']
                 ],
                 columns: [{
+                        data: null,
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `<input type="checkbox" class="rowCheckbox" value="${row.id}">`;
+                        }
+                    },
+                    {
                         data: 'user_name'
                     },
                     {
@@ -85,6 +95,49 @@
             $('#clearLogFilterBtn').on('click', function() {
                 $('#filterUser').val('');
                 logsTable.ajax.reload();
+            });
+
+            $(document).on('change', '#selectAllLogs', function() {
+                $('.rowCheckbox').prop('checked', $(this).is(':checked'));
+            });
+
+            // Hard delete — login logs are an audit trail, not soft-deletable.
+            $('#bulkDeleteLogsBtn').on('click', function() {
+                let ids = $('.rowCheckbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (!ids.length) {
+                    showToast('Select at least one log entry first', 'danger');
+                    return;
+                }
+
+                Swal.fire({
+                    title: `Permanently delete ${ids.length} log entr${ids.length === 1 ? 'y' : 'ies'}?`,
+                    text: 'This cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e3342f',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete permanently'
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+
+                    $.ajax({
+                        url: '/logs/bulk-delete',
+                        method: 'POST',
+                        data: {
+                            ids: ids
+                        },
+                        success: function(res) {
+                            showToast(`${res.deleted} log entr${res.deleted === 1 ? 'y' : 'ies'} deleted`, 'success');
+                            logsTable.ajax.reload();
+                        },
+                        error: function() {
+                            showToast('Something went wrong', 'danger');
+                        }
+                    });
+                });
             });
         });
     </script>

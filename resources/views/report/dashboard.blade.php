@@ -965,8 +965,8 @@
                     return;
                 }
 
-                if (!confirm(`Delete ${ids.length} selected report(s)? This permanently removes ` +
-                        `each report and every language translation of it. This cannot be undone.`)) {
+                if (!confirm(`Move ${ids.length} selected report(s) to the recycle bin? ` +
+                        `Every language translation of each report moves with it. You can restore them later.`)) {
                     return;
                 }
 
@@ -977,7 +977,7 @@
                         ids: ids
                     },
                     success: function(res) {
-                        showToast(`${res.deleted} report(s) deleted`, 'success');
+                        showToast(`${res.deleted} report(s) moved to the recycle bin`, 'success');
                         setTimeout(() => location.reload(), 600);
                     },
                     error: function() {

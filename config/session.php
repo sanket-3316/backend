@@ -228,6 +228,11 @@ return [
     |
     */
 
-    'serialization' => 'json',
+    // 'json' (the framework default) round-trips a stored object back as a
+    // plain array on the next request — this app stores the logged-in user
+    // as an object and reads it back with -> syntax everywhere (navbar,
+    // sidebar, AdminCheck, ...), so it needs 'php' serialization to survive
+    // intact across requests.
+    'serialization' => 'php',
 
 ];

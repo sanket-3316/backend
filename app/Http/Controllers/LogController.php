@@ -27,4 +27,18 @@ class LogController extends Controller
 
         return response()->json(['data' => $query->get()]);
     }
+
+    // Hard delete — login logs are an audit trail, not soft-deletable
+    // content, so "delete" here really means gone.
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = DB::table('login_logs')->whereIn('id', $request->ids)->delete();
+
+        return response()->json(['status' => true, 'deleted' => $deleted]);
+    }
 }

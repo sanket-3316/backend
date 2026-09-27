@@ -12,6 +12,13 @@
 
             <div class="row g-2 align-items-end mb-3">
                 <div class="col-auto">
+                    <label class="form-label mb-1" for="filterActiveStatus">Show</label>
+                    <select id="filterActiveStatus" class="form-control form-control-sm">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive (Deleted)</option>
+                    </select>
+                </div>
+                <div class="col-auto">
                     <label class="form-label mb-1" for="filterDateFrom">Submitted from</label>
                     <input type="date" id="filterDateFrom" class="form-control form-control-sm">
                 </div>
@@ -35,14 +42,21 @@
                 <div class="col-auto">
                     <button type="button" id="clearFiltersBtn" class="btn btn-outline-secondary btn-sm">Clear filters</button>
                 </div>
-                <div class="col-auto ms-auto d-flex gap-2">
-                    <button type="button" id="exportSelectedBtn" class="btn-custom btn-secondary-gradient btn-sm">
-                        Export Selected
-                    </button>
-                    <button type="button" id="exportFilteredBtn" class="btn-custom btn-primary-gradient btn-sm">
-                        Export (Filtered)
-                    </button>
-                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mb-3">
+                <button type="button" id="bulkDeleteBtn" class="btn-custom btn-warning-gradient btn-sm">
+                    Delete Selected
+                </button>
+                <button type="button" id="bulkRestoreBtn" class="btn-custom btn-secondary-gradient btn-sm" style="display:none;">
+                    Restore Selected
+                </button>
+                <button type="button" id="exportSelectedBtn" class="btn-custom btn-secondary-gradient btn-sm">
+                    Export Selected
+                </button>
+                <button type="button" id="exportFilteredBtn" class="btn-custom btn-primary-gradient btn-sm">
+                    Export (Filtered)
+                </button>
             </div>
 
             <table id="leadsTable" class="table table-striped align-middle">
@@ -62,6 +76,32 @@
                 </thead>
             </table>
 
+        </div>
+
+        <!-- VIEW MODAL -->
+        <div class="modal fade" id="viewLeadModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5>Lead Details</h5>
+                        <button type="button" class="btn-close btn-custom btn-danger-gradient" data-mdb-dismiss="modal"> X
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-borderless">
+                            <tr><th style="width:180px;">Name</th><td id="view_name"></td></tr>
+                            <tr><th>Email</th><td id="view_email"></td></tr>
+                            <tr><th>Phone</th><td id="view_phone"></td></tr>
+                            <tr><th>Designation</th><td id="view_designation"></td></tr>
+                            <tr><th>Report</th><td id="view_report_title"></td></tr>
+                            <tr><th>Category</th><td id="view_category_name"></td></tr>
+                            <tr><th>Status</th><td id="view_status_name"></td></tr>
+                            <tr><th>Submitted At</th><td id="view_created_at"></td></tr>
+                            <tr><th>Message</th><td id="view_message" style="white-space: pre-wrap;"></td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ADD / EDIT MODAL -->
@@ -149,15 +189,21 @@
     </section>
 
     <script>
-        let leadModal;
+        let leadModal, viewLeadModal;
         let leadsTable;
 
         $(document).ready(function() {
 
             leadModal = createModal('leadModal');
+            viewLeadModal = createModal('viewLeadModal');
 
             leadsTable = $('#leadsTable').DataTable({
-                ajax: '/leads/list',
+                ajax: {
+                    url: '/leads/list',
+                    data: function(d) {
+                        d.status = $('#filterActiveStatus').val();
+                    }
+                },
                 order: [
                     [8, 'desc']
                 ],
@@ -215,13 +261,29 @@
                         data: 'id',
                         orderable: false,
                         render: function(data, type, row) {
-                            return `
-                <button class="btn-custom btn-primary-gradient editLead" data-id="${data}">Edit</button>
-                <button class="btn-custom btn-warning-gradient deleteLead" data-id="${data}">Delete</button>
-                `;
+                            let isInactive = $('#filterActiveStatus').val() === 'inactive';
+                            let btns = `<button class="btn-custom btn-secondary-gradient viewLead" data-id="${data}">View</button> `;
+
+                            if (isInactive) {
+                                btns += `<button class="btn-custom btn-primary-gradient restoreLead" data-id="${data}">Restore</button>`;
+                            } else {
+                                btns += `<button class="btn-custom btn-primary-gradient editLead" data-id="${data}">Edit</button>
+                <button class="btn-custom btn-warning-gradient deleteLead" data-id="${data}">Delete</button>`;
+                            }
+
+                            return btns;
                         }
                     }
                 ]
+            });
+
+            // ===== ACTIVE / INACTIVE toggle — server-side, needs a real reload =====
+            $('#filterActiveStatus').on('change', function() {
+                let isInactive = $(this).val() === 'inactive';
+                $('#bulkDeleteBtn, #exportSelectedBtn, #exportFilteredBtn').toggle(!isInactive);
+                $('#bulkRestoreBtn').toggle(isInactive);
+                $('#addLeadBtn').toggle(!isInactive);
+                leadsTable.ajax.reload();
             });
 
             // ===== FILTERS (client-side, same pattern as the report dashboard) =====
@@ -273,11 +335,109 @@
                 $('.rowCheckbox').prop('checked', $(this).is(':checked'));
             });
 
-            // ===== EXPORT SELECTED (checked rows only, ignores date filter) =====
-            $('#exportSelectedBtn').on('click', function() {
-                let ids = $('.rowCheckbox:checked').map(function() {
+            function getSelectedLeadIds() {
+                return $('.rowCheckbox:checked').map(function() {
                     return $(this).val();
                 }).get();
+            }
+
+            // ===== VIEW =====
+            $(document).on('click', '.viewLead', function() {
+                let id = $(this).data('id');
+
+                $.get('/leads/show/' + id, function(res) {
+                    let d = res.data;
+                    $('#view_name').text(d.name || '—');
+                    $('#view_email').text(d.email || '—');
+                    $('#view_phone').text(d.phone || '—');
+                    $('#view_designation').text(d.designation || '—');
+                    $('#view_report_title').text(d.report_title || '—');
+                    $('#view_category_name').text(d.category_name || '—');
+                    $('#view_status_name').text(d.status_name || '—');
+                    $('#view_created_at').text(d.created_at || '—');
+                    $('#view_message').text(d.message || '—');
+                    viewLeadModal.show();
+                }).fail(function() {
+                    showToast('Could not load lead details', 'danger');
+                });
+            });
+
+            // ===== BULK DELETE (soft) =====
+            $('#bulkDeleteBtn').on('click', function() {
+                let ids = getSelectedLeadIds();
+
+                if (!ids.length) {
+                    showToast('Select at least one lead first', 'danger');
+                    return;
+                }
+
+                if (!confirm(`Delete ${ids.length} selected lead(s)? They can be restored from the Inactive filter.`)) {
+                    return;
+                }
+
+                $.ajax({
+                    url: '/leads/bulk-delete',
+                    method: 'POST',
+                    data: {
+                        ids: ids
+                    },
+                    success: function(res) {
+                        showToast(`${res.deleted} lead(s) deleted`, 'success');
+                        leadsTable.ajax.reload();
+                    },
+                    error: function() {
+                        showToast('Something went wrong', 'danger');
+                    }
+                });
+            });
+
+            // ===== BULK RESTORE =====
+            $('#bulkRestoreBtn').on('click', function() {
+                let ids = getSelectedLeadIds();
+
+                if (!ids.length) {
+                    showToast('Select at least one lead first', 'danger');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/leads/bulk-restore',
+                    method: 'POST',
+                    data: {
+                        ids: ids
+                    },
+                    success: function(res) {
+                        showToast(`${res.restored} lead(s) restored`, 'success');
+                        leadsTable.ajax.reload();
+                    },
+                    error: function() {
+                        showToast('Something went wrong', 'danger');
+                    }
+                });
+            });
+
+            $(document).on('click', '.restoreLead', function() {
+                let id = $(this).data('id');
+
+                $.ajax({
+                    url: '/leads/restore',
+                    method: 'POST',
+                    data: {
+                        id: id
+                    },
+                    success: function(res) {
+                        showToast(res.message || 'Lead restored', 'success');
+                        leadsTable.ajax.reload();
+                    },
+                    error: function() {
+                        showToast('Something went wrong', 'danger');
+                    }
+                });
+            });
+
+            // ===== EXPORT SELECTED (checked rows only, ignores date filter) =====
+            $('#exportSelectedBtn').on('click', function() {
+                let ids = getSelectedLeadIds();
 
                 if (!ids.length) {
                     showToast('Select at least one lead first', 'danger');
@@ -370,7 +530,7 @@
 
                 Swal.fire({
                     title: 'Delete this lead?',
-                    text: 'This action cannot be undone!',
+                    text: 'This can be restored from the Inactive filter.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#e3342f',

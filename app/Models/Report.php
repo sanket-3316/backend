@@ -264,22 +264,78 @@ class Report extends Model
         ]);
     }
 
-    // 🔹 DELETE (hard delete — FK cascades wipe every reports_info /
-    // report_descriptions / report_prices row for this report_id, so deleting
-    // the canonical report removes every language variant of it too)
+    // 🔹 DELETE — moves the report to the recycle bin (marks every language
+    // variant's reports_info row as is_deleted=1). Not a hard delete — see
+    // permanentlyDeleteReport() for that.
     public static function deleteReport($id)
     {
-        return DB::table('reports')->where('report_id', $id)->delete();
+        return DB::table('reports_info')->where('report_id', $id)->update(['is_deleted' => 1]);
     }
 
-    // 🔹 BULK DELETE — same cascade as deleteReport(), for many report_ids at once
+    // 🔹 BULK DELETE — same recycle-bin move as deleteReport(), for many report_ids at once
     public static function bulkDeleteReports(array $ids)
     {
         if (empty($ids)) {
             return 0;
         }
 
+        return DB::table('reports_info')->whereIn('report_id', $ids)->update(['is_deleted' => 1]);
+    }
+
+    // 🔹 RESTORE — brings a report back out of the recycle bin
+    public static function restoreReport($id)
+    {
+        return DB::table('reports_info')->where('report_id', $id)->update(['is_deleted' => 0]);
+    }
+
+    public static function bulkRestoreReports(array $ids)
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        return DB::table('reports_info')->whereIn('report_id', $ids)->update(['is_deleted' => 0]);
+    }
+
+    // 🔹 PERMANENT DELETE (hard delete — FK cascades wipe every reports_info /
+    // report_descriptions / report_prices row for this report_id). Only
+    // reachable from the recycle bin, on a report that's already there.
+    public static function permanentlyDeleteReport($id)
+    {
+        return DB::table('reports')->where('report_id', $id)->delete();
+    }
+
+    public static function bulkPermanentlyDeleteReports(array $ids)
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
         return DB::table('reports')->whereIn('report_id', $ids)->delete();
+    }
+
+    // 🔹 GET RECYCLE BIN — same shape as getAllReports(), but only reports
+    // whose English row has been moved to the recycle bin.
+    public static function getDeletedReports()
+    {
+        return DB::table('reports as r')
+            ->join('reports_info as ri', 'r.report_id', '=', 'ri.report_id')
+            ->leftJoin('category_translations as ct', 'r.category_id', '=', 'ct.category_id')
+            ->leftJoin('languages as l', 'l.id', '=', 'ri.language_id')
+            ->select(
+                'r.report_id',
+                'r.report_url',
+                'ri.report_title',
+                'r.category_id',
+                'ct.name as category_name',
+                'ri.updated_at as deleted_date',
+                'l.code as language_code'
+            )
+            ->where('ri.language_id', 1)
+            ->where('ct.language_id', 1)
+            ->where('ri.is_deleted', 1)
+            ->orderBy('ri.updated_at', 'desc')
+            ->get();
     }
 
     // 🔹 GET ALL REPORTS

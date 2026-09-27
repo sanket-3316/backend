@@ -33,6 +33,7 @@ class LeadController extends Controller
             return response()->json([
                 'status' => false,
                 'errors' => $validator->errors(),
+                'message' => $validator->errors()->first(),
             ], 422);
         }
 
@@ -96,7 +97,8 @@ class LeadController extends Controller
 
     // Shared select/join used by both the datatable list and the CSV export,
     // so the two never drift out of sync on what a "lead row" looks like.
-    private function baseQuery()
+    // $status: 'active' (default) -> is_deleted=0, 'inactive' -> is_deleted=1.
+    private function baseQuery($status = 'active')
     {
         return DB::table('leads as l')
             ->leftJoin('reports_info as ri', function ($join) {
@@ -106,7 +108,7 @@ class LeadController extends Controller
                 $join->on('l.category_id', '=', 'ct.category_id')->where('ct.language_id', 1);
             })
             ->leftJoin('lead_statuses as ls', 'l.status_id', '=', 'ls.id')
-            ->where('l.is_deleted', 0)
+            ->where('l.is_deleted', $status === 'inactive' ? 1 : 0)
             ->select(
                 'l.id',
                 'l.name',
@@ -124,15 +126,40 @@ class LeadController extends Controller
             );
     }
 
-    // GET /leads/list — full non-deleted lead set; date-range and report-name
+    // GET /leads/list?status=active|inactive — date-range and report-name
     // filters are applied client-side (same pattern the report dashboard
-    // uses), so this always returns everything and lets the table redraw
-    // instantly as filters change without a round-trip per filter change.
-    public function ajaxList()
+    // uses), so this always returns everything matching the active/inactive
+    // toggle and lets the table redraw instantly as filters change.
+    public function ajaxList(Request $request)
     {
-        $data = $this->baseQuery()->orderByDesc('l.created_at')->get();
+        $data = $this->baseQuery($request->query('status', 'active'))->orderByDesc('l.created_at')->get();
 
         return response()->json(['data' => $data]);
+    }
+
+    // GET /leads/show/{id} — full row for the dashboard's "View" modal (the
+    // table truncates long messages; this returns everything untruncated).
+    // Works regardless of active/inactive, so "View" still works from either
+    // filter.
+    public function show($id)
+    {
+        $lead = DB::table('leads as l')
+            ->leftJoin('reports_info as ri', function ($join) {
+                $join->on('l.report_id', '=', 'ri.report_id')->where('ri.language_id', 1);
+            })
+            ->leftJoin('category_translations as ct', function ($join) {
+                $join->on('l.category_id', '=', 'ct.category_id')->where('ct.language_id', 1);
+            })
+            ->leftJoin('lead_statuses as ls', 'l.status_id', '=', 'ls.id')
+            ->where('l.id', $id)
+            ->select('l.*', 'ri.report_title', 'ct.name as category_name', 'ls.name as status_name')
+            ->first();
+
+        if (!$lead) {
+            return response()->json(['status' => false, 'message' => 'Lead not found'], 404);
+        }
+
+        return response()->json(['status' => true, 'data' => $lead]);
     }
 
     public function adminStore(Request $request)
@@ -231,6 +258,43 @@ class LeadController extends Controller
         return response()->json(['status' => true, 'message' => 'Lead deleted successfully']);
     }
 
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = Lead::whereIn('id', $request->ids)->update(['is_deleted' => 1]);
+
+        return response()->json(['status' => true, 'deleted' => $deleted]);
+    }
+
+    // Brings a lead back from the "Inactive" filter.
+    public function restore(Request $request)
+    {
+        $lead = Lead::find($request->id);
+        if (!$lead) {
+            return response()->json(['status' => false, 'message' => 'Lead not found'], 404);
+        }
+
+        $lead->update(['is_deleted' => 0]);
+
+        return response()->json(['status' => true, 'message' => 'Lead restored successfully']);
+    }
+
+    public function bulkRestore(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $restored = Lead::whereIn('id', $request->ids)->update(['is_deleted' => 0]);
+
+        return response()->json(['status' => true, 'restored' => $restored]);
+    }
+
     // GET /leads/export — Excel-compatible CSV (no spreadsheet library in
     // this project; a .csv opens directly in Excel, same approach already
     // used for the keyword bulk-upload template download).
@@ -241,7 +305,7 @@ class LeadController extends Controller
     //                        (either/both optional).
     public function exportCsv(Request $request)
     {
-        $query = $this->baseQuery();
+        $query = $this->baseQuery($request->query('status', 'active'));
 
         $ids = array_filter(array_map('trim', explode(',', (string) $request->query('ids'))));
 

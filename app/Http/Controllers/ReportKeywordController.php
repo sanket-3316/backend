@@ -16,11 +16,20 @@ class ReportKeywordController extends Controller
         return view('keywords.dashboard');
     }
 
+    // DataTables column index -> DB column, for server-side ordering.
+    // Index 0 is the checkbox column (not sortable).
+    const ORDER_COLUMNS = [
+        2 => 'keyword',
+        3 => 'report_status',
+        4 => 'created_at',
+    ];
+
     public function ajaxList(Request $request)
     {
         $start = $request->start;
         $length = $request->length;
         $search = $request->search['value'] ?? '';
+        $status = $request->query('status');
 
         $query = ReportKeyword::query();
 
@@ -28,10 +37,18 @@ class ReportKeywordController extends Controller
             $query->where('keyword', 'like', "%$search%");
         }
 
-        $total = ReportKeyword::count();
-        $filtered = $query->count();
+        if ($status) {
+            $query->where('report_status', $status);
+        }
 
-        $data = $query->offset($start)->limit($length)->latest()->get();
+        $total = ReportKeyword::count();
+        $filtered = (clone $query)->count();
+
+        $orderColumnIndex = (int) $request->input('order.0.column', 4);
+        $orderDir = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        $orderColumn = self::ORDER_COLUMNS[$orderColumnIndex] ?? 'created_at';
+
+        $data = $query->orderBy($orderColumn, $orderDir)->offset($start)->limit($length)->get();
 
         $rows = [];
 
@@ -58,6 +75,7 @@ class ReportKeywordController extends Controller
             };
 
             $rows[] = [
+                '<input type="checkbox" class="rowCheckbox" value="' . $row->id . '">',
                 $row->id,
                 $row->keyword,
                 $statusBadge,
@@ -85,6 +103,34 @@ class ReportKeywordController extends Controller
             "recordsFiltered" => $filtered,
             "data" => $rows
         ]);
+    }
+
+    // Bulk delete/status-change for the dashboard's checkbox selection.
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = ReportKeyword::whereIn('id', $request->ids)->delete();
+
+        return response()->json(['status' => true, 'deleted' => $deleted]);
+    }
+
+    public function bulkUpdateStatus(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+            'report_status' => 'required|in:' . implode(',', self::SELECTABLE_STATUSES),
+        ]);
+
+        $updated = ReportKeyword::whereIn('id', $request->ids)->update([
+            'report_status' => $request->report_status,
+        ]);
+
+        return response()->json(['status' => true, 'updated' => $updated]);
     }
 
     public function store(Request $request)

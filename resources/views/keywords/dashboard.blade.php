@@ -20,9 +20,40 @@
                 </div>
             </div>
 
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-auto">
+                    <label class="form-label mb-1" for="filterStatus">Report Status</label>
+                    <select id="filterStatus" class="form-control form-control-sm">
+                        <option value="">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                        <option value="hold">Hold</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="button" id="clearKeywordFiltersBtn" class="btn btn-outline-secondary btn-sm">Clear filter</button>
+                </div>
+                <div class="col-auto ms-auto d-flex gap-2">
+                    <select id="bulkStatusSelect" class="form-control form-control-sm" style="width:auto;">
+                        <option value="pending">Pending</option>
+                        <option value="hold">Hold</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <button type="button" id="bulkUpdateStatusBtn" class="btn-custom btn-secondary-gradient btn-sm">
+                        Set Status (Selected)
+                    </button>
+                    <button type="button" id="bulkDeleteBtn" class="btn-custom btn-warning-gradient btn-sm">
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+
             <table id="keywords" class="table table-striped">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="selectAllKeywords"></th>
                         <th>ID</th>
                         <th>Keyword</th>
                         <th>Report Status</th>
@@ -164,9 +195,19 @@
             table = $('#keywords').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '/keywords/list',
+                ajax: {
+                    url: '/keywords/list',
+                    data: function(d) {
+                        d.status = $('#filterStatus').val();
+                    }
+                },
+                order: [
+                    [4, 'desc']
+                ],
                 columns: [{
-                        data: 0
+                        data: 0,
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 1
@@ -181,12 +222,89 @@
                         data: 4
                     },
                     {
-                        data: 5
+                        data: 5,
+                        orderable: false
+                    },
+                    {
+                        data: 6,
+                        orderable: false
                     }
                 ]
             });
 
             modal = createModal('keywordModal');
+
+            $('#filterStatus').on('change', function() {
+                table.ajax.reload();
+            });
+
+            $('#clearKeywordFiltersBtn').on('click', function() {
+                $('#filterStatus').val('');
+                table.ajax.reload();
+            });
+
+            $(document).on('change', '#selectAllKeywords', function() {
+                $('.rowCheckbox').prop('checked', $(this).is(':checked'));
+            });
+
+            function getSelectedKeywordIds() {
+                return $('.rowCheckbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+            }
+
+            $('#bulkDeleteBtn').on('click', function() {
+                let ids = getSelectedKeywordIds();
+
+                if (!ids.length) {
+                    showToast('Select at least one keyword first', 'danger');
+                    return;
+                }
+
+                if (!confirm(`Delete ${ids.length} selected keyword(s)? This cannot be undone.`)) {
+                    return;
+                }
+
+                $.ajax({
+                    url: '/keywords/bulk-delete',
+                    method: 'POST',
+                    data: {
+                        ids: ids
+                    },
+                    success: function(res) {
+                        showToast(`${res.deleted} keyword(s) deleted`, 'success');
+                        table.ajax.reload();
+                    },
+                    error: function() {
+                        showToast('Something went wrong', 'danger');
+                    }
+                });
+            });
+
+            $('#bulkUpdateStatusBtn').on('click', function() {
+                let ids = getSelectedKeywordIds();
+
+                if (!ids.length) {
+                    showToast('Select at least one keyword first', 'danger');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/keywords/bulk-update-status',
+                    method: 'POST',
+                    data: {
+                        ids: ids,
+                        report_status: $('#bulkStatusSelect').val()
+                    },
+                    success: function(res) {
+                        showToast(`${res.updated} keyword(s) updated`, 'success');
+                        table.ajax.reload();
+                    },
+                    error: function() {
+                        showToast('Something went wrong', 'danger');
+                    }
+                });
+            });
 
             // ADD
             $("#addKeywordBtn").click(function() {

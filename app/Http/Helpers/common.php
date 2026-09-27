@@ -1,11 +1,47 @@
 <?php
 
 use App\Models\Category;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+if (!function_exists('get_setting')) {
+    // Generic key-value settings store — used for the OpenAI API key, site
+    // contact details, and anything else that's a single admin-editable
+    // value rather than its own table.
+    function get_setting($key, $default = null)
+    {
+        $value = DB::table('settings')->where('key', $key)->value('value');
+        return $value !== null ? $value : $default;
+    }
+}
+
+if (!function_exists('set_setting')) {
+    function set_setting($key, $value)
+    {
+        DB::table('settings')->updateOrInsert(
+            ['key' => $key],
+            ['value' => $value, 'updated_at' => now(), 'created_at' => now()]
+        );
+    }
+}
+
+// Reads the OpenAI key from the DB (admin-editable via the dashboard's API
+// Key page) so the report-generation cron doesn't need a .env change/deploy
+// to rotate it. Falls back to, and self-heals from, the .env value the
+// first time this runs on an environment that hasn't set it in the DB yet.
 function get_openAI_api_key()
 {
-    return env('OPENAI_API_KEY');
+    $key = get_setting('openai_api_key');
+    if (!empty($key)) {
+        return $key;
+    }
+
+    $envKey = env('OPENAI_API_KEY');
+    if (!empty($envKey)) {
+        set_setting('openai_api_key', $envKey);
+    }
+
+    return $envKey;
 }
 
 function renderCategoryOptions($categories, $parent_id = null, $level = 0)

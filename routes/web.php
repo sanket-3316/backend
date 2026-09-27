@@ -4,12 +4,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CareerController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ContactMessageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportKeywordController;
 use App\Http\Controllers\ReportPriceController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RedirectController;
 
@@ -26,6 +29,12 @@ Route::middleware(['auth.check'])->group(function () {
     Route::get('/dashboard/lead-stats', [DashboardController::class, 'leadStats']);
     Route::get('/logout', [AuthController::class, 'logout']);
 
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [ProfileController::class, 'index']);
+        Route::post('/update', [ProfileController::class, 'update']);
+        Route::post('/change-password', [ProfileController::class, 'changePassword']);
+    });
+
     Route::prefix('users')->middleware(['admin.check'])->group(function () {
         Route::get('/dashboard', [UserController::class, 'index']);
         Route::post('/store', [UserController::class, 'store']);
@@ -37,15 +46,30 @@ Route::middleware(['auth.check'])->group(function () {
     Route::prefix('logs')->middleware(['admin.check'])->group(function () {
         Route::get('/', [LogController::class, 'index']);
         Route::get('/list', [LogController::class, 'ajaxList']);
+        Route::post('/bulk-delete', [LogController::class, 'bulkDelete']);
     });
 
     Route::prefix('leads')->group(function () {
         Route::get('/', [LeadController::class, 'index']);
         Route::get('/list', [LeadController::class, 'ajaxList']);
         Route::get('/export', [LeadController::class, 'exportCsv']);
+        Route::get('/show/{id}', [LeadController::class, 'show']);
         Route::post('/store', [LeadController::class, 'adminStore']);
         Route::post('/update/{id}', [LeadController::class, 'update']);
         Route::post('/delete', [LeadController::class, 'delete']);
+        Route::post('/bulk-delete', [LeadController::class, 'bulkDelete']);
+        Route::post('/restore', [LeadController::class, 'restore']);
+        Route::post('/bulk-restore', [LeadController::class, 'bulkRestore']);
+    });
+
+    Route::prefix('contact-messages')->group(function () {
+        Route::get('/', [ContactMessageController::class, 'index']);
+        Route::get('/list', [ContactMessageController::class, 'ajaxList']);
+        Route::get('/show/{id}', [ContactMessageController::class, 'show']);
+        Route::post('/delete', [ContactMessageController::class, 'delete']);
+        Route::post('/bulk-delete', [ContactMessageController::class, 'bulkDelete']);
+        Route::post('/restore', [ContactMessageController::class, 'restore']);
+        Route::post('/bulk-restore', [ContactMessageController::class, 'bulkRestore']);
     });
     // category
     Route::prefix('category')->group(function () {
@@ -72,11 +96,25 @@ Route::middleware(['auth.check'])->group(function () {
         Route::post('/bulk-delete', [ReportController::class, 'bulkDestroy']);
         Route::get('/languages/{id}', [ReportController::class, 'getReportLanguages']);
         Route::delete('/deleteReport/{id}', [ReportController::class, 'deleteReport']);
+
+        Route::get('/recycle-bin', [ReportController::class, 'recycleBin']);
+        Route::get('/recycle-bin/list', [ReportController::class, 'recycleBinList']);
+        Route::post('/restore/{id}', [ReportController::class, 'restore']);
+        Route::post('/bulk-restore', [ReportController::class, 'bulkRestore']);
+        Route::delete('/permanent-delete/{id}', [ReportController::class, 'permanentDestroy']);
+        Route::post('/bulk-permanent-delete', [ReportController::class, 'bulkPermanentDestroy']);
     });
 
     Route::prefix('report-price')->group(function () {
         Route::get('/', [ReportPriceController::class, 'index']);
         Route::post('/apply', [ReportPriceController::class, 'applyToAll']);
+    });
+
+    Route::prefix('settings')->middleware(['admin.check'])->group(function () {
+        Route::get('/api-key', [SettingController::class, 'apiKey']);
+        Route::post('/api-key/update', [SettingController::class, 'updateApiKey']);
+        Route::get('/contact-details', [SettingController::class, 'contactDetails']);
+        Route::post('/contact-details/update', [SettingController::class, 'updateContactDetails']);
     });
 
     Route::prefix('redirect')->group(function () {
@@ -103,6 +141,8 @@ Route::middleware(['auth.check'])->group(function () {
         Route::post('/store', [ReportKeywordController::class, 'store']);
         Route::post('/update/{id}', [ReportKeywordController::class, 'update']);
         Route::post('/delete', [ReportKeywordController::class, 'delete']);
+        Route::post('/bulk-delete', [ReportKeywordController::class, 'bulkDelete']);
+        Route::post('/bulk-update-status', [ReportKeywordController::class, 'bulkUpdateStatus']);
 
         Route::get('/download-template', [ReportKeywordController::class, 'downloadTemplate']);
         Route::post('/import-csv', [ReportKeywordController::class, 'importCsv']);

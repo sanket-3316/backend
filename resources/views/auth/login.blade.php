@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
     <style>
         #intro {
@@ -36,9 +37,13 @@
                                     </div>
 
                                     <!-- Password input -->
-                                    <div class="form-outline mb-4" data-mdb-input-init>
-                                        <input type="password" name="password" id="password" class="form-control" />
+                                    <div class="form-outline mb-4 position-relative" data-mdb-input-init>
+                                        <input type="password" name="password" id="password" class="form-control" style="padding-right: 40px;" />
                                         <label class="form-label" for="password">Password</label>
+                                        <span id="togglePassword"
+                                            style="position: absolute; top: 50%; right: 14px; transform: translateY(-50%); cursor: pointer; z-index: 5;">
+                                            <i class="fa fa-eye" id="togglePasswordIcon"></i>
+                                        </span>
                                     </div>
 
                                     <!-- 2 column grid layout for inline styling -->
@@ -72,6 +77,23 @@
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
     </footer>
+
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            var input = document.getElementById('password');
+            var icon = document.getElementById('togglePasswordIcon');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    </script>
 </body>
 
 </html>

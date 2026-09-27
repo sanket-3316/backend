@@ -194,7 +194,13 @@ function search_from_gpt($user_prompt, $system_prompt = "", $temperature = 0.08,
     }
     $response = json_decode($response, true);
     if (isset($response['error'])) {
-        return $response['error']['message'] ?? 'An error occurred while processing your request.';
+        // Was previously returned as if it were the GPT response body, so an
+        // OpenAI-side error (rate limit, no credits, invalid key, ...) would
+        // get json_decode()'d by the caller and fail with a generic, useless
+        // "Invalid X JSON" — throwing here surfaces the real reason (e.g.
+        // "You have no credits remaining...") since every caller already
+        // wraps its search_from_gpt() calls in a try/catch.
+        throw new \Exception('OpenAI API error: ' . ($response['error']['message'] ?? 'An error occurred while processing your request.'));
     }
 
     if (empty($response['choices'][0]['message']['content']) || !$response['choices'][0]['message']['content']) {
@@ -232,23 +238,24 @@ function get_report_segmentation_prompt()
         "system" => "You are a market research analyst. Always return structured JSON only. Do not include explanations or extra text.",
         "user" => "Generate detailed market segmentation for the given [[keyword]] market.
 
-                        Return ONLY valid JSON in this format:
+                        Return ONLY valid JSON in this exact format (this is just an example shape —
+                        replace/extend the segment category keys with whatever categories are
+                        actually relevant to [[keyword]], such as By Component, By Deployment,
+                        By Application, By Industry, By End User, By Technology, By Region, etc.):
 
                         {
                             \"segments\": {
                                 \"By Component\": [],
-                                \"By Deployment\": [],
                                 \"By Application\": [],
-                                \"By Industry\": [],
-                                ... same other segments like end user
-                                \"By region\": []
-
+                                \"By Region\": []
                             },
                             \"h1_long_title\": \"h1_long_title\"
                         }
 
                         Rules:
                         - Use realistic market research categories
+                        - Include 4-6 segment category keys in \"segments\" (not just the 3 shown
+                          in the example above), whichever are most relevant to [[keyword]]
                         - Minimum 4-6 items per segment
                         - Keep names professional and industry-standard
                         - Always add first latter capital each segment name.

@@ -8,7 +8,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('reports:generate-report')
+Schedule::command('report:generate')
     // ->cron('0 */1 * * *')
     ->everyTenMinutes()
     ->withoutOverlapping()

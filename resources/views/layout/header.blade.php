@@ -13,10 +13,10 @@
 
     <script>
         // GLOBAL 12-HOUR DATE/TIME FORMATTER — a plain synchronous script
-        // (not part of the @vite bundle above, which loads as a deferred
-        // ES module and can run AFTER a page's own inline DataTable render
-        // callbacks fire on first load) so it's guaranteed to exist before
-        // any dashboard page's own script runs.
+        // (not part of the Vite-bundled app.js above, which loads as a
+        // deferred ES module and can run AFTER a page's own inline
+        // DataTable render callbacks fire on first load) so it's guaranteed
+        // to exist before any dashboard page's own script runs.
         //
         // Site runs on Asia/Kolkata (see config/app.php) — stored timestamps
         // are already IST wall-clock, so this only needs to force 12-hour

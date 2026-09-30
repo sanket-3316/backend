@@ -899,12 +899,7 @@ function get_report_description_prompt($keyword, $segments, $market, $players)
                     Then 3-4 paragraphs (100-150 words each) analyzing the sub-segments in that category — their relative demand drivers, use cases, and why the leading one leads.
                     - Make sure each para fully detailed and large.
                     - Make sure each <h2> {Segment Category Name} add first latter capital.
-                    ---------------------------------------------------------
-
-                    7. <h2>{$keyword} Market Regional Outlook</h2>
-                    First, a 2-column HTML <table> (header <th>Regional Outlook</th><th></th>) with 4 rows: \"Largest Market\" => region name, \"Fastest Growing Market\" => region name, \"Emerging Countries\" => 3 country names, \"Future Outlook\" => one-sentence summary.
-                    Then exactly 5 paragraphs (80-120 words each), one per region in this order: North America, Europe, Asia-Pacific, Latin America, Middle East & Africa — each covering that region's specific demand drivers, maturity, and outlook.
-
+       
                     ---------------------------------------------------------
 
                     8. <h2>{$keyword} Market Competitor Outlook</h2>

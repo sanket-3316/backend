@@ -115,6 +115,46 @@ window.showToast = function (message, type = 'success') {
 };
 
 /* ===================================
+   GLOBAL 12-HOUR DATE/TIME FORMATTER
+   Site runs on Asia/Kolkata (see config/app.php) — stored timestamps are
+   already IST wall-clock, so this only needs to force a 12-hour AM/PM
+   display instead of relying on the browser's locale defaults (which can
+   silently render 24-hour depending on the admin's OS/browser locale).
+=================================== */
+window.formatDateTime = function (value) {
+    if (!value) return '—';
+
+    let str = String(value).includes('T') ? value : value.replace(' ', 'T');
+    let d = new Date(str);
+
+    if (isNaN(d)) return value;
+
+    return d.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    });
+};
+
+window.formatDate = function (value) {
+    if (!value) return '—';
+
+    let str = String(value).includes('T') ? value : value.replace(' ', 'T');
+    let d = new Date(str);
+
+    if (isNaN(d)) return value;
+
+    return d.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+/* ===================================
    GLOBAL AJAX SETUP (CSRF)
 =================================== */
 $.ajaxSetup({

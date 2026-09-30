@@ -66,17 +66,14 @@
                     {
                         data: 'login_at',
                         render: function(data) {
-                            if (!data) return '—';
-                            let d = new Date(data.replace(' ', 'T'));
-                            return isNaN(d) ? data : d.toLocaleString();
+                            return formatDateTime(data);
                         }
                     },
                     {
                         data: 'logout_at',
                         render: function(data) {
                             if (!data) return '<span class="badge bg-success">Active</span>';
-                            let d = new Date(data.replace(' ', 'T'));
-                            return isNaN(d) ? data : d.toLocaleString();
+                            return formatDateTime(data);
                         }
                     },
                     {

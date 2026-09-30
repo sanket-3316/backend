@@ -75,9 +75,7 @@
                     {
                         data: 'deleted_date',
                         render: function(data) {
-                            if (!data) return '—';
-                            let d = new Date(data.replace(' ', 'T'));
-                            return isNaN(d) ? data : d.toLocaleString();
+                            return formatDateTime(data);
                         }
                     },
                     {

@@ -79,7 +79,12 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Site is hosted in the US but the team/audience runs on India time —
+    // this makes now()/created_at/updated_at and the scheduler (routes/console.php)
+    // all run on IST wall-clock. Verified this matches the DB server's own
+    // clock 1:1 (its session time_zone is SYSTEM, which is already IST here),
+    // so timestamp columns round-trip correctly with no separate DB-side change.
+    'timezone' => 'Asia/Kolkata',
 
     /*
     |--------------------------------------------------------------------------

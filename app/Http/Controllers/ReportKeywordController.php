@@ -79,7 +79,7 @@ class ReportKeywordController extends Controller
                 $row->id,
                 $row->keyword,
                 $statusBadge,
-                $row->created_at->format('Y-m-d H:i'),
+                $row->created_at->format('d M Y, h:i A'),
                 $errorBtn,
                 '
                 <button class="btn-custom btn-primary-gradient editKeyword"

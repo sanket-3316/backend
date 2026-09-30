@@ -905,25 +905,13 @@
                     {
                         data: 'published_date',
                         render: function(data) {
-                            if (!data) return '—';
-                            let d = new Date(data);
-                            return isNaN(d) ? data : d.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            });
+                            return formatDateTime(data);
                         }
                     },
                     {
                         data: 'updated_date',
                         render: function(data) {
-                            if (!data) return '—';
-                            let d = new Date(data);
-                            return isNaN(d) ? data : d.toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            });
+                            return formatDateTime(data);
                         }
                     },
                     {

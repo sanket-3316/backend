@@ -56,6 +56,7 @@
                         <th><input type="checkbox" id="selectAllKeywords"></th>
                         <th>ID</th>
                         <th>Keyword</th>
+                        <th>Category</th>
                         <th>Report Status</th>
                         <th>Created At</th>
                         <th>Error</th>
@@ -66,7 +67,7 @@
 
         </div>
         <div class="modal fade" id="keywordModal">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 id="modalTitle">Add Keyword</h5>
@@ -80,10 +81,60 @@
                         <input type="hidden" id="keyword_id">
 
                         <div class="modal-body">
-                            <input type="text" id="keyword" name="keyword" class="form-control"
-                                placeholder="Enter keyword">
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label" for="keyword">Keyword / Market Name</label>
+                                    <input type="text" id="keyword" name="keyword" class="form-control"
+                                        placeholder="e.g. Biogas">
+                                    <small class="text-danger error-keyword"></small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="category_id">Category (optional)</label>
+                                    <select id="category_id" name="category_id" class="form-control">
+                                        <option value="">— GPT will choose —</option>
+                                        @foreach ($categories as $category)
+                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-danger error-category_id"></small>
+                                </div>
+                            </div>
 
-                            <small class="text-danger error-keyword"></small>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="base_year_market_size">Base Year Market Size</label>
+                                    <input type="text" id="base_year_market_size" name="base_year_market_size" class="form-control"
+                                        placeholder='e.g. $1.5 Billion'>
+                                    <small class="text-danger error-base_year_market_size"></small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="forecast_year_market_size">Forecast Year Market Size</label>
+                                    <input type="text" id="forecast_year_market_size" name="forecast_year_market_size" class="form-control"
+                                        placeholder='e.g. $3.2 Billion'>
+                                    <small class="text-danger error-forecast_year_market_size"></small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="forecast_cagr">Forecast CAGR (%)</label>
+                                    <input type="text" id="forecast_cagr" name="forecast_cagr" class="form-control"
+                                        placeholder="e.g. 8.5">
+                                    <small class="text-danger error-forecast_cagr"></small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="segments">Segments (JSON)</label>
+                                <textarea id="segments" name="segments" class="form-control" rows="4"
+                                    style="font-family: monospace; font-size: 13px;"
+                                    placeholder='{"By Type": ["Agricultural", "Industrial"], "By Application": ["Power Generation", "Heat"]}'></textarea>
+                                <small class="text-danger error-segments"></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="companies">Key Companies (comma separated)</label>
+                                <input type="text" id="companies" name="companies" class="form-control"
+                                    placeholder="Company A, Company B, Company C">
+                                <small class="text-danger error-companies"></small>
+                            </div>
 
                             <div class="mt-3" id="statusWrapper" style="display:none;">
                                 <label class="form-label" for="report_status">Status</label>
@@ -94,10 +145,17 @@
                                 </select>
                                 <small class="text-danger error-report_status"></small>
                             </div>
+
+                            <div class="form-check form-switch mt-3" id="quickGenerateWrapper">
+                                <input class="form-check-input" type="checkbox" id="quick_generate" name="quick_generate" value="1">
+                                <label class="form-check-label" for="quick_generate">
+                                    Quick Generate — generate the report immediately and save it, instead of waiting for the next cron run
+                                </label>
+                            </div>
                         </div>
 
                         <div class="modal-footer">
-                            <button type="submit" class="btn-custom btn-secondary-gradient">
+                            <button type="submit" class="btn-custom btn-secondary-gradient" id="keywordSubmitBtn">
                                 Save
                             </button>
                         </div>
@@ -121,12 +179,23 @@
 
                         <div class="modal-body">
                             <p class="text-muted small">
-                                CSV with the market name in the first column.
+                                CSV columns: Market Name, Base Year Market Size, Forecast Year Market Size, Forecast CAGR,
+                                Segments (JSON), Key Companies (comma separated).
                                 <a href="{{ url('/keywords/download-template') }}">Download the format</a> if you need it.
                             </p>
 
                             <input type="file" id="csv_file" name="file" class="form-control" accept=".csv,text/csv" required>
                             <small class="text-danger error-file"></small>
+
+                            <div class="mt-3">
+                                <label class="form-label" for="csv_category_id">Category (optional — applies to every row in this file)</label>
+                                <select id="csv_category_id" name="category_id" class="form-control">
+                                    <option value="">— GPT will choose per report —</option>
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
                             <div class="form-check mt-3">
                                 <input type="checkbox" class="form-check-input" id="skip_existing" name="skip_existing"
@@ -202,7 +271,7 @@
                     }
                 },
                 order: [
-                    [4, 'desc']
+                    [5, 'desc']
                 ],
                 columns: [{
                         data: 0,
@@ -216,17 +285,21 @@
                         data: 2
                     },
                     {
-                        data: 3
+                        data: 3,
+                        orderable: false
                     },
                     {
                         data: 4
                     },
                     {
-                        data: 5,
-                        orderable: false
+                        data: 5
                     },
                     {
                         data: 6,
+                        orderable: false
+                    },
+                    {
+                        data: 7,
                         orderable: false
                     }
                 ]
@@ -313,8 +386,10 @@
                 $("#keyword_id").val('');
                 $("#keywordForm").attr("action", "/keywords/store");
 
-                // New keywords always start as pending — no need to choose.
+                // New keywords always start as pending — no need to choose,
+                // and Quick Generate only makes sense for a brand-new keyword.
                 $("#statusWrapper").hide();
+                $("#quickGenerateWrapper").show();
 
                 modal.show();
             });
@@ -331,6 +406,12 @@
                     $("#keyword").val($(this).data("keyword"));
                     $("#keyword_id").val($(this).data("id"));
                     $("#report_status").val($(this).data("status") || 'pending');
+                    $("#base_year_market_size").val($(this).data("base_year_market_size"));
+                    $("#forecast_year_market_size").val($(this).data("forecast_year_market_size"));
+                    $("#forecast_cagr").val($(this).data("forecast_cagr"));
+                    $("#segments").val($(this).data("segments"));
+                    $("#companies").val($(this).data("companies"));
+                    $("#category_id").val($(this).data("category_id") || '');
 
                     $("#keywordForm").attr("action", "/keywords/update/" + $(this).data("id"));
 
@@ -338,6 +419,10 @@
                     // "processing") after a generation error gets moved back
                     // to pending, or held, without status silently resetting.
                     $("#statusWrapper").show();
+                    // Quick Generate is an add-time-only convenience — editing
+                    // an existing keyword still goes through the normal cron.
+                    $("#quickGenerateWrapper").hide();
+                    $("#quick_generate").prop('checked', false);
 
                     modal.show();
                 }, 200);
@@ -349,38 +434,48 @@
 
                 let form = $(this);
                 let url = form.attr("action");
+                let isQuickGenerate = $("#quick_generate").is(":checked") && url.includes('store');
 
                 $(".text-danger").text('');
+                $(".form-control").removeClass("is-invalid");
                 showLoader();
+
+                if (isQuickGenerate) {
+                    $("#keywordSubmitBtn").prop('disabled', true).text('Generating… this can take a minute');
+                }
 
                 $.ajax({
                     url: url,
                     type: "POST",
                     data: form.serialize(),
+                    timeout: 180000, // Quick Generate runs a real GPT call synchronously
 
                     success: function(res) {
                         hideLoader();
+                        $("#keywordSubmitBtn").prop('disabled', false).text('Save');
                         modal.hide();
                         table.ajax.reload();
 
-                        let msg = url.includes('store') ?
-                            'Keyword added successfully' :
-                            'Keyword updated successfully';
-
-                        showToast(msg, 'success');
+                        showToast(res.message || (url.includes('store') ? 'Keyword added successfully' : 'Keyword updated successfully'), 'success');
                     },
 
                     error: function(err) {
                         hideLoader();
+                        $("#keywordSubmitBtn").prop('disabled', false).text('Save');
 
                         if (err.status === 422) {
                             let errors = err.responseJSON.errors;
 
-                            $.each(errors, function(key, val) {
-                                $(".error-" + key).text(val[0]);
-                            });
+                            if (errors) {
+                                $.each(errors, function(key, val) {
+                                    $(".error-" + key).text(Array.isArray(val) ? val[0] : val);
+                                    $("#" + key).addClass("is-invalid");
+                                });
+                            } else {
+                                showToast(err.responseJSON?.message || 'Something went wrong', 'danger');
+                            }
                         } else {
-                            showToast("Something went wrong!", 'error');
+                            showToast("Something went wrong!", 'danger');
                         }
                     }
                 });
@@ -442,8 +537,6 @@
             });
 
             // DELETE
-
-
             $(document).on('click', '.deleteKeyword', function() {
 
                 let id = $(this).data("id");

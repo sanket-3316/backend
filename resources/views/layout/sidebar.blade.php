@@ -25,6 +25,9 @@
             <a class="hover-bg-primary rounded-1" href="{{ url('/keywords') }}">
                 <i class="fa-solid fa-robot me-2"></i> Keywords
             </a>
+            <a class="hover-bg-primary rounded-1" href="{{ url('/prompts') }}">
+                <i class="fa-solid fa-comment-dots me-2"></i> Prompts
+            </a>
             <a class="hover-bg-primary rounded-1" href="{{ url('/report/recycle-bin') }}">
                 <i class="fa-solid fa-trash-can me-2"></i> Recycle Bin
             </a>

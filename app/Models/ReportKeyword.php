@@ -9,6 +9,12 @@ class ReportKeyword extends Model
         'keyword',
         'is_report_generated',
         'report_status',
-        'error'
+        'error',
+        'base_year_market_size',
+        'forecast_year_market_size',
+        'forecast_cagr',
+        'segments',
+        'companies',
+        'category_id',
     ];
 }

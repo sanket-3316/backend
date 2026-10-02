@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PromptController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportKeywordController;
 use App\Http\Controllers\ReportPriceController;
@@ -146,6 +147,14 @@ Route::middleware(['auth.check'])->group(function () {
 
         Route::get('/download-template', [ReportKeywordController::class, 'downloadTemplate']);
         Route::post('/import-csv', [ReportKeywordController::class, 'importCsv']);
+    });
+
+    Route::prefix('prompts')->group(function () {
+        Route::get('/', [PromptController::class, 'index']);
+        Route::post('/store', [PromptController::class, 'store']);
+        Route::post('/update/{id}', [PromptController::class, 'update']);
+        Route::post('/toggle-active/{id}', [PromptController::class, 'toggleActive']);
+        Route::post('/delete', [PromptController::class, 'delete']);
     });
 });
 

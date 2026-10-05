@@ -19,7 +19,7 @@ Schedule::command('report:internal-linking')
     ->withoutOverlapping()
     ->sendOutputTo(storage_path('logs/report_internal_linking.log'));
 
-Schedule::command('report:translate')
-    ->everyTenMinutes()
-    ->withoutOverlapping()
-    ->sendOutputTo(storage_path('logs/report_translate.log'));
+// Schedule::command('report:translate')
+//     ->everyTenMinutes()
+//     ->withoutOverlapping()
+//     ->sendOutputTo(storage_path('logs/report_translate.log'));
